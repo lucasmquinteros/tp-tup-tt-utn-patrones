@@ -4,6 +4,7 @@ import { TradingService } from "../services/TradingService";
 import { MarketAnalysisService } from "../services/MarketAnalysisService";
 import { MarketSimulationService } from "../services/MarketSimulationService";
 import { storage } from "../utils/storage";
+import {Validator} from "../utils/validator"
 
 // Instancias de servicios - Candidato para Dependency Injection
 const tradingService = new TradingService();
@@ -160,35 +161,11 @@ export class MarketController {
 
 // Controlador de trading - Métodos largos con múltiples responsabilidades
 export class TradingController {
+
   static async buyAsset(req: Request, res: Response) {
     try {
-      const user = req.user;
-      const { symbol, quantity } = req.body;
-
-      // Validaciones adicionales específicas de compra
-      if (!symbol || typeof symbol !== "string") {
-        return res.status(400).json({
-          error: "Símbolo requerido",
-          message: "El símbolo del activo es requerido",
-        });
-      }
-
-      if (!quantity || typeof quantity !== "number" || quantity <= 0) {
-        return res.status(400).json({
-          error: "Cantidad inválida",
-          message: "La cantidad debe ser un número mayor a 0",
-        });
-      }
-
-      // Verificar que el activo existe
-      const asset = storage.getAssetBySymbol(symbol.toUpperCase());
-      if (!asset) {
-        return res.status(404).json({
-          error: "Activo no encontrado",
-          message: `El activo ${symbol} no existe`,
-        });
-      }
-
+      const { user, symbol, quantity } = await Validator.validateAsset(req, res)
+  
       // Ejecutar orden de compra
       const transaction = await tradingService.executeBuyOrder(
         user.id,
@@ -219,32 +196,7 @@ export class TradingController {
 
   static async sellAsset(req: Request, res: Response) {
     try {
-      const user = req.user;
-      const { symbol, quantity } = req.body;
-
-      // Validaciones similares a buyAsset (código duplicado)
-      if (!symbol || typeof symbol !== "string") {
-        return res.status(400).json({
-          error: "Símbolo requerido",
-          message: "El símbolo del activo es requerido",
-        });
-      }
-
-      if (!quantity || typeof quantity !== "number" || quantity <= 0) {
-        return res.status(400).json({
-          error: "Cantidad inválida",
-          message: "La cantidad debe ser un número mayor a 0",
-        });
-      }
-
-      // Verificar que el activo existe
-      const asset = storage.getAssetBySymbol(symbol.toUpperCase());
-      if (!asset) {
-        return res.status(404).json({
-          error: "Activo no encontrado",
-          message: `El activo ${symbol} no existe`,
-        });
-      }
+      const { user, symbol, quantity } = await TradingController.validateAsset(req, res);
 
       // Ejecutar orden de venta
       const transaction = await tradingService.executeSellOrder(
