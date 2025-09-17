@@ -4,7 +4,7 @@ import { TradingService } from "../services/TradingService";
 import { MarketAnalysisService } from "../services/MarketAnalysisService";
 import { MarketSimulationService } from "../services/MarketSimulationService";
 import { storage } from "../utils/storage";
-import {Validator} from "../utils/validator"
+import { Validator } from "../utils/validator"
 
 // Instancias de servicios - Candidato para Dependency Injection
 const tradingService = new TradingService();
@@ -164,8 +164,11 @@ export class TradingController {
 
   static async buyAsset(req: Request, res: Response) {
     try {
-      const { user, symbol, quantity } = await Validator.validateAsset(req, res)
-  
+      const { symbol, quantity } = req.body;
+      const user = req.user;
+      Validator.validateQuantity(quantity);
+      Validator.validateSymbol(symbol);
+
       // Ejecutar orden de compra
       const transaction = await tradingService.executeBuyOrder(
         user.id,
