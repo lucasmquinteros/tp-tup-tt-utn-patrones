@@ -1,13 +1,17 @@
+import { MarketAnalysisService } from "../services/MarketAnalysisService/MarketAnalysisService";
+import { ResponseService } from "../services/ResponseService";
+
+
 // Controlador de análisis
 export class AnalysisController {
     static async getRiskAnalysis(req: Request, res: Response) {
         try {
             const user = req.user;
-            const riskAnalysis = analysisService.analyzePortfolioRisk(user.id);
+            const riskAnalysis = MarketAnalysisService.analyzePortfolioRisk(user.id);
 
-            res.json({ riskAnalysis });
+            ResponseService.ok(res, { riskAnalysis });
         } catch (error) {
-            res.status(500).json({
+            ResponseService.internalError(res, {
                 error: "Error en análisis de riesgo",
                 message: error instanceof Error ? error.message : "Error desconocido",
             });

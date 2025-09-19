@@ -1,6 +1,10 @@
 // Servicio de análisis de mercado
-import { MarketData, Asset, Portfolio, RiskAnalysis } from "../models/types";
-import { storage } from "../utils/storage";
+import { Asset } from "../../models/Asset/Asset";
+import {  Portfolio, } from "../../models/Portfolio/Portfolio";
+import { PortfolioHolding } from "../../models/Portfolio/PortfolioHolding";
+import { RiskAnalysis } from "../../models/RiskAnalysis/RiskAnalisis";
+import { storage } from "../../utils/storage";
+import { RiskStrategy } from "./IRiskPortfolio";
 
 export class MarketAnalysisService {
   // Análisis de riesgo del portafolio
@@ -12,7 +16,6 @@ export class MarketAnalysisService {
 
     // Cálculo básico de diversificación
     const diversificationScore = this.calculateDiversificationScore(portfolio);
-
     // Cálculo básico de volatilidad
     const volatilityScore = this.calculateVolatilityScore(portfolio);
 
@@ -39,6 +42,7 @@ export class MarketAnalysisService {
       diversificationScore,
       recommendations
     );
+    
 
     return riskAnalysis;
   }
@@ -50,7 +54,7 @@ export class MarketAnalysisService {
     // Contar sectores únicos
     const sectors = new Set<string>();
     portfolio.holdings.forEach((holding) => {
-      const asset = storage.getAssetBySymbol(holding.symbol);
+      const asset: Asset = storage.getAssetBySymbol(holding.symbol);
       if (asset) {
         sectors.add(asset.sector);
       }
@@ -118,37 +122,11 @@ export class MarketAnalysisService {
     riskLevel: string
   ): string[] {
     const recommendations: string[] = [];
+    const analizadorDeRiesgo = new RiskStrategy(riskLevel);
 
-    if (diversificationScore < 40) {
-      recommendations.push(
-        "Considera diversificar tu portafolio invirtiendo en diferentes sectores"
-      );
-    }
-
-    if (volatilityScore > 70) {
-      recommendations.push(
-        "Tu portafolio tiene alta volatilidad, considera añadir activos más estables"
-      );
-    }
-
-    if (riskLevel === "high") {
-      recommendations.push(
-        "Nivel de riesgo alto detectado, revisa tu estrategia de inversión"
-      );
-    }
-
-    if (diversificationScore > 80 && volatilityScore < 30) {
-      recommendations.push(
-        "Excelente diversificación y bajo riesgo, mantén esta estrategia"
-      );
-    }
-
-    // Recomendaciones genéricas si no hay específicas
-    if (recommendations.length === 0) {
-      recommendations.push(
-        "Tu portafolio se ve balanceado, continúa monitoreando regularmente"
-      );
-    }
+    recommendations.push(
+      ...analizadorDeRiesgo._generateRiskRecommendations({ diversificationScore, volatilityScore, riskLevel })
+    );
 
     return recommendations;
   }
@@ -220,7 +198,7 @@ export class MarketAnalysisService {
 
     allAssets.forEach((asset) => {
       const hasHolding = portfolio.holdings.some(
-        (h) => h.symbol === asset.symbol
+        (h: PortfolioHolding) => h.symbol === asset.symbol
       );
 
       if (!hasHolding) {
