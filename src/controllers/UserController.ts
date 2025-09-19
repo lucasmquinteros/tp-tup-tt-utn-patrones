@@ -1,21 +1,18 @@
 import {Request, Response} from "express";
 import {storage} from "../utils/storage";
 import { UpdateProfileSchema } from "../models/User/UserSchema"
-import { UserDTO, User } from "../models/User/UserDTO";
+import { UserDTO } from "../models/User/UserDTO";
+import { User } from "../models/User/User";
+import { ResponseService } from "../services/ResponseService";
 
 export class UserController {
     static async getProfile(req: Request, res: Response) {
         try {
-            const user = req.user;
+            const user: User = req.user;
 
-            res.json({ message: "Perfil obtenido exitosamente", user: UserDTO.toPublic(user) });
-
-            ;
+            ResponseService.ok(res, UserDTO.toPublic(user), "Perfil obtenido exitosamente");
         } catch (error) {
-            res.status(500).json({
-                error: "Error al obtener perfil",
-                message: error instanceof Error ? error.message : "Error desconocido",
-            });
+            ResponseService.notFound(res, "Error al obtener perfil");
         }
     }
 
@@ -36,21 +33,10 @@ export class UserController {
 
             storage.updateUser(user);
 
-            res.json({
-                message: "Perfil actualizado exitosamente",
-                user: {
-                    id: user.id,
-                    username: user.username,
-                    email: user.email,
-                    balance: user.balance,
-                    riskTolerance: user.riskTolerance,
-                },
-            });
+            ResponseService.ok(res, UserDTO.toPublic(user), "Perfil actualizado exitosamente");
         } catch (error) {
-            res.status(500).json({
-                error: "Error al actualizar perfil",
-                message: error instanceof Error ? error.message : "Error desconocido",
-            });
+            ResponseService.internalError(res, error, "Error al actualizar perfil");    
+            
         }
     }
 }
