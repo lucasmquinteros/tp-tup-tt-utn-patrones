@@ -2,8 +2,16 @@
 import { MarketData, Asset } from "../models/types";
 import { storage } from "../utils/storage";
 import { config } from "../config/config";
+export interface IMarketSimulationService {
+    startMarketSimulation(): void;
+    stopMarketSimulation(): void;
+    simulateMarketEvent(eventType: "bull" | "bear" | "crash" | "recovery"): void;
+    getSimulationStatus(): { isRunning: boolean; lastUpdate: Date | null };
+}
 
-export class MarketSimulationService {
+
+
+export class MarketSimulationService implements IMarketSimulationService{
   private isRunning: boolean = false;
   private intervalId: NodeJS.Timeout | null = null;
 
@@ -128,7 +136,7 @@ export class MarketSimulationService {
 
     allMarketData.forEach((marketData) => {
       let impactFactor = 0;
-
+    //posible refactorizacion de codigo para que sea mas dinamico y no se repita
       switch (eventType) {
         case "bull":
           impactFactor = 0.05 + Math.random() * 0.1; // +5% a +15%
