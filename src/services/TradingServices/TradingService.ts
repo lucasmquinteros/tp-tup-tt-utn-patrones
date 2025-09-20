@@ -1,15 +1,15 @@
 // Servicios de trading
 import {
-  Transaction,
-  Order,
-  Asset,
-  User,
-  Portfolio,
-  PortfolioHolding,
-} from "../models/types";
+  UserDTO
+} from "../models/User/UserDTO";
 import { storage } from "../utils/storage";
 import { config } from "../config/config";
 import {Validator} from "../utils/validator";
+import {User} from "../models/User/User";
+import {Asset} from "../models/Asset/Asset";
+import {Portfolio} from "../models/Portfolio/Portfolio";
+import {PortfolioHolding} from "../models/Portfolio/PortfolioHolding";
+import {Transaction} from "../models/Transaction/Transaction";
 export interface ITradingService {
     executeBuyOrder(
         userId: string,
@@ -31,15 +31,15 @@ export class TradingService implements  ITradingService{
     type: "buy" | "sell"){
         {
             // Obtener usuario
-            const user = Validator.getUser(userId)
+            const user: User = Validator.getUser(userId)
 
             // Obtener activo
-            const asset = Validator.getAsset(symbol)
+            const asset:Asset = Validator.getAsset(symbol)
 
             // Verificar holdings suficientes
-            const portfolio = Validator.getPortafolio(userId)
+            const portfolio: Portfolio = Validator.getPortafolio(userId)
 
-            const holding = Validator.getHolding(portfolio, symbol);
+            const holding: PortfolioHolding = Validator.getHolding(portfolio.userId, symbol);
 
             // El precio de ejecución es siempre el precio actual de mercado
             const executionPrice = asset.currentPrice;
