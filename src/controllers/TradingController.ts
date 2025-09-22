@@ -1,13 +1,14 @@
-import {ITradingService} from "../services/TradingService";
+import {TradingService} from "../services/TradingServices/TradingService";
 import {Request, Response} from "express";
 import {Validator} from "../utils/validator";
+import {ResponseService} from "../services/ResponseService";
 
 export class TradingController {
-    private static _tradingService: ITradingService;
+    private static _tradingService: TradingService;
 
 
-    constructor(ITradingService: ITradingService) {
-        TradingController._tradingService = ITradingService;
+    constructor(TradingService: TradingService) {
+        TradingController._tradingService = TradingService;
     }
 
     static async buyAsset(req: Request, res: Response) {
@@ -24,24 +25,9 @@ export class TradingController {
                 quantity
             );
 
-            res.status(201).json({
-                message: "Orden de compra ejecutada exitosamente",
-                transaction: {
-                    id: transaction.id,
-                    type: transaction.type,
-                    symbol: transaction.symbol,
-                    quantity: transaction.quantity,
-                    price: transaction.price,
-                    fees: transaction.fees,
-                    timestamp: transaction.timestamp,
-                    status: transaction.status,
-                },
-            });
+            ResponseService.ok(res, transaction, "Orden de compra ejecutada exitosamente")
         } catch (error) {
-            res.status(400).json({
-                error: "Error en orden de compra",
-                message: error instanceof Error ? error.message : "Error desconocido",
-            });
+            ResponseService.internalError(res, error, "Error en orden de compra");
         }
     }
 
@@ -60,24 +46,9 @@ export class TradingController {
                 quantity
             );
 
-            res.status(201).json({
-                message: "Orden de venta ejecutada exitosamente",
-                transaction: {
-                    id: transaction.id,
-                    type: transaction.type,
-                    symbol: transaction.symbol,
-                    quantity: transaction.quantity,
-                    price: transaction.price,
-                    fees: transaction.fees,
-                    timestamp: transaction.timestamp,
-                    status: transaction.status,
-                },
-            });
+            ResponseService.ok(res, transaction, "Orden de venta ejecutada exitosamente")
         } catch (error) {
-            res.status(400).json({
-                error: "Error en orden de venta",
-                message: error instanceof Error ? error.message : "Error desconocido",
-            });
+            ResponseService.internalError(res, error, "Error en orden de venta");
         }
     }
 
@@ -86,23 +57,9 @@ export class TradingController {
             const user = req.user;
             const transactions = TradingController._tradingService.getTransactionHistory(user.id);
 
-            res.json({
-                transactions: transactions.map((transaction) => ({
-                    id: transaction.id,
-                    type: transaction.type,
-                    symbol: transaction.symbol,
-                    quantity: transaction.quantity,
-                    price: transaction.price,
-                    fees: transaction.fees,
-                    timestamp: transaction.timestamp,
-                    status: transaction.status,
-                })),
-            });
+            ResponseService.ok(res, transactions, "Historial de transacciones obtenido exitosamente");
         } catch (error) {
-            res.status(500).json({
-                error: "Error al obtener historial",
-                message: error instanceof Error ? error.message : "Error desconocido",
-            });
+            ResponseService.internalError(res, error, "Error al obtener historial de transacciones");
         }
     }
 }

@@ -1,12 +1,10 @@
 // Almacenamiento en memoria
-import {
-  User,
-  Asset,
-  Transaction,
-  Order,
-  Portfolio,
-  MarketData,
-} from "../models/types";
+import {User} from "../models/User/User";
+import {Asset} from "../models/Asset/Asset";
+import {Transaction} from "../models/Transaction/Transaction";
+import {Order} from "../models/Order/Order";
+import {Portfolio} from "../models/Portfolio/Portfolio";
+import {MarketData} from "../models/MarketData/MarketData";
 import { config } from "../config/config";
 
 // Base de datos simulada en memoria (se pierde al reiniciar)

@@ -9,10 +9,7 @@ export class AuthController {
 
             ResponseService.ok(res, { user }, "API key válida");
         } catch (error) {
-            ResponseService.internalError(res, {
-                error: "Error interno del servidor",
-                message: error instanceof Error ? error.message : "Error desconocido",
-            });
+            ResponseService.internalError(res, error, "Error al validar API key");
         }
     }
 }

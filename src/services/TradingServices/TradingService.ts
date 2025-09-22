@@ -1,55 +1,44 @@
 // Servicios de trading
-import {
-  UserDTO
-} from "../models/User/UserDTO";
-import { storage } from "../utils/storage";
-import { config } from "../config/config";
-import {Validator} from "../utils/validator";
-import {User} from "../models/User/User";
-import {Asset} from "../models/Asset/Asset";
-import {Portfolio} from "../models/Portfolio/Portfolio";
-import {PortfolioHolding} from "../models/Portfolio/PortfolioHolding";
-import {Transaction} from "../models/Transaction/Transaction";
-export interface ITradingService {
-    executeBuyOrder(
-        userId: string,
-        symbol: string,
-        quantity: number
-    ): Promise<Transaction>;
-    executeSellOrder(
-        userId: string,
-        symbol: string,
-        quantity: number
-    ): Promise<Transaction>;
-    getTransactionHistory(userId: string): Transaction[];
-}
+import {storage} from "../../utils/storage";
+import {config} from "../../config/config";
+import {Portfolio} from "../../models/Portfolio/Portfolio";
+import {PortfolioHolding} from "../../models/Portfolio/PortfolioHolding";
+import {Transaction} from "../../models/Transaction/Transaction";
+import {ITradingService, typeTransaction} from "./ITradingService";
+import {UserRepository} from "../../repository/infra/UserRepository";
+import {AssetRepository} from "../../repository/infra/AssetRepository";
+import {PortfolioRepository} from "../../repository/infra/PortfolioRepository";
+import {Asset} from "../../models/Asset/Asset";
+
 export class TradingService implements  ITradingService{
+    private userRepo: UserRepository;
+    private assetRepo:AssetRepository;
+    private portfolioRepo: PortfolioRepository;
+    constructor(userRepo: UserRepository, assetRepo: AssetRepository, portfolioRepo: PortfolioRepository) {
+        this.userRepo = userRepo;
+        this.assetRepo =    assetRepo;
+        this.portfolioRepo = portfolioRepo;
+    }
     private async executeOrder(
     userId: string,
     symbol: string,
     quantity: number,
-    type: "buy" | "sell"){
+    type: typeTransaction){
         {
-            // Obtener usuario
-            const user: User = Validator.getUser(userId)
 
-            // Obtener activo
-            const asset:Asset = Validator.getAsset(symbol)
+            const user = this.userRepo.getOneByIdOrFail(userId);
 
-            // Verificar holdings suficientes
-            const portfolio: Portfolio = Validator.getPortafolio(userId)
 
-            const holding: PortfolioHolding = Validator.getHolding(portfolio.userId, symbol);
+            const asset = this.assetRepo.findBySymbolOrFail(symbol);
 
-            // El precio de ejecución es siempre el precio actual de mercado
+
             const executionPrice = asset.currentPrice;
 
-            // Calcular beneficio bruto y comisiones
             const grossAmount = quantity * executionPrice;
             const fees = this.calculateFees(grossAmount, type);
             const netAmount = grossAmount - fees;
 
-            // Crear transacción
+
             const transactionId = this.generateTransactionId();
             const transaction = new Transaction(
                 transactionId,
@@ -61,21 +50,20 @@ export class TradingService implements  ITradingService{
                 fees
             );
 
-            // Completar la transacción
+
             transaction.complete();
 
-            // Actualizar balance del usuario
+
             user.addBalance(netAmount);
             storage.updateUser(user);
 
-            // Actualizar portafolio
-            this.updatePortfolioAfterSell(userId, symbol, quantity, executionPrice);
 
-            // Guardar transacción
+            this.updatePortfolio(userId, symbol, quantity, executionPrice, type);
+
+
             storage.addTransaction(transaction);
 
-            // Simular volatilidad del mercado después de la operación
-            this.simulateMarketImpact(symbol, quantity, "sell");
+            this.simulateMarketImpact(symbol, quantity, type);
 
             return transaction;
         }
@@ -86,7 +74,7 @@ export class TradingService implements  ITradingService{
     symbol: string,
     quantity: number
   ): Promise<Transaction> {
-    return this.executeOrder(userId, symbol, quantity, "buy");
+    return this.executeOrder(userId, symbol, quantity, typeTransaction.buy);
   }
 
   // Ejecutar orden de venta al precio de mercado
@@ -95,66 +83,35 @@ export class TradingService implements  ITradingService{
     symbol: string,
     quantity: number
   ): Promise<Transaction> {
-
-        return this.executeOrder(userId, symbol, quantity, "sell");
+        return this.executeOrder(userId, symbol, quantity, typeTransaction.sell);
 
   }
 
   // Cálculo de comisiones
-  private calculateFees(amount: number, type: "buy" | "sell"): number {
+  private calculateFees(amount: number, type: typeTransaction): number {
     const feePercentage =
-      type === "buy"
+      type === typeTransaction.buy
         ? config.tradingFees.buyFeePercentage
         : config.tradingFees.sellFeePercentage;
     const calculatedFee = amount * feePercentage;
     return Math.max(calculatedFee, config.tradingFees.minimumFee);
   }
+  //refactorizacion de actualizar portafolio
+    private updatePortfolio(userId: string, symbol: string, quantity: number, price: number, action: typeTransaction){
+        const portfolio: Portfolio = this.portfolioRepo.getOneByIdOrFail(userId);
+        (action === typeTransaction.buy ? portfolio.addHolding(symbol, quantity, price) : portfolio.removeHolding(symbol, quantity))
+        this.recalculatePortfolioValues(portfolio);
+        storage.updatePortfolio(portfolio);
 
-  // Actualizar portafolio después de compra
-  private updatePortfolioAfterBuy(
-    userId: string,
-    symbol: string,
-    quantity: number,
-    price: number
-  ): void {
-    const portfolio: Portfolio = Validator.getPortafolio(userId)
-
-    // Agregar las acciones al portafolio
-    portfolio.addHolding(symbol, quantity, price);
-
-    // Recalcular valores actuales
-    this.recalculatePortfolioValues(portfolio);
-
-    storage.updatePortfolio(portfolio);
-  }
-
-  // Actualizar portafolio después de venta
-  private updatePortfolioAfterSell(
-    userId: string,
-    symbol: string,
-    quantity: number,
-    price: number
-  ): void {
-    const portfolio = storage.getPortfolioByUserId(userId);
-    if (!portfolio) return;
-
-    // Remover las acciones del portafolio
-    portfolio.removeHolding(symbol, quantity);
-
-    // Recalcular valores actuales
-    this.recalculatePortfolioValues(portfolio);
-
-    storage.updatePortfolio(portfolio);
-  }
+    }
 
   // Recalcular valores del portafolio
   private recalculatePortfolioValues(portfolio: Portfolio): void {
     // Actualizar el valor actual de cada holding
     portfolio.holdings.forEach((holding) => {
-      const asset = storage.getAssetBySymbol(holding.symbol);
-      if (asset) {
-        holding.updateCurrentValue(asset.currentPrice);
-      }
+      const asset: Asset = this.assetRepo.getOneByIdOrFail(holding.symbol);
+
+      holding.updateCurrentValue(asset.currentPrice);
     });
 
     // Calcular totales del portafolio
@@ -165,7 +122,7 @@ export class TradingService implements  ITradingService{
   private simulateMarketImpact(
     symbol: string,
     quantity: number,
-    action: "buy" | "sell"
+    action: typeTransaction
   ): void {
     const marketData = storage.getMarketDataBySymbol(symbol);
     if (!marketData) return;
@@ -175,7 +132,7 @@ export class TradingService implements  ITradingService{
     const priceImpact = marketData.price * impactFactor * 0.001;
 
     const newPrice =
-      action === "buy"
+      action === typeTransaction.buy
         ? marketData.price + priceImpact
         : marketData.price - priceImpact;
 
@@ -188,12 +145,10 @@ export class TradingService implements  ITradingService{
     marketData.timestamp = new Date();
 
     // Actualizar asset también
-    const asset = storage.getAssetBySymbol(symbol);
-    if (asset) {
+    const asset: Asset = this.assetRepo.findBySymbolOrFail(symbol);
       asset.currentPrice = newPrice;
       asset.lastUpdated = new Date();
       storage.updateAsset(asset);
-    }
 
     storage.updateMarketData(marketData);
   }

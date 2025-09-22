@@ -1,14 +1,15 @@
-import { MarketAnalysisService } from "../services/MarketAnalysisService/MarketAnalysisService";
+import { IMarketAnalysisService, createDefaultMarketAnalysisService } from "../services/MarketAnalysisService/MarketAnalysisService";
 import { ResponseService } from "../services/ResponseService";
-
+import { Request, Response } from "express";
 
 // Controlador de análisis
 export class AnalysisController {
+        private static service: IMarketAnalysisService = createDefaultMarketAnalysisService();
+
     static async getRiskAnalysis(req: Request, res: Response) {
         try {
             const user = req.user;
-            const riskAnalysis = MarketAnalysisService.analyzePortfolioRisk(user.id);
-
+            const riskAnalysis = AnalysisController.service.analyzePortfolioRisk(user.id);
             ResponseService.ok(res, { riskAnalysis });
         } catch (error) {
             ResponseService.internalError(res, {
@@ -21,16 +22,10 @@ export class AnalysisController {
     static async getRecommendations(req: Request, res: Response) {
         try {
             const user = req.user;
-            const recommendations = analysisService.generateInvestmentRecommendations(
-                user.id
-            );
-
-            res.json({ recommendations });
+            const recommendations = AnalysisController.service.generateInvestmentRecommendations(user.id);
+            ResponseService.ok(res, { recommendations });
         } catch (error) {
-            res.status(500).json({
-                error: "Error al generar recomendaciones",
-                message: error instanceof Error ? error.message : "Error desconocido",
-            });
+            ResponseService.internalError(res, error, "Error al generar recomendaciones");
         }
     }
 }

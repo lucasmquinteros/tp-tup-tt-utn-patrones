@@ -1,52 +1,45 @@
+import {storage} from "../utils/storage";
+import {User} from "../models/User/User";
+import {ResponseService} from "../services/ResponseService";
+import {Request, Response} from "express";
+import {PortfolioRepository} from "../repository/infra/PortfolioRepository";
+import {AssetRepository} from "../repository/infra/AssetRepository";
+
+
 export class PortfolioController {
+
+    private static PortfolioRepository: PortfolioRepository;
+    private static AssetRepository: AssetRepository;
+    constructor(PortfolioRepository: PortfolioRepository, AssetRepository: AssetRepository) {
+        PortfolioController.PortfolioRepository = PortfolioRepository;
+        PortfolioController.AssetRepository = AssetRepository;
+    }
+
     static async getPortfolio(req: Request, res: Response) {
         try {
-            const user = req.user;
-            const portfolio = storage.getPortfolioByUserId(user.id);
+            const user: User = req.user;
+            const portfolio = PortfolioController.PortfolioRepository.findByUserId(user.id)
 
             if (!portfolio) {
-                return res.status(404).json({
-                    error: "Portafolio no encontrado",
-                    message: "No se encontró el portafolio del usuario",
-                });
+                ResponseService.notFound(res, "Portafolio no encontrado");
             }
 
-            res.json({
-                portfolio: {
-                    holdings: portfolio.holdings,
-                    totalValue: portfolio.totalValue,
-                    totalInvested: portfolio.totalInvested,
-                    totalReturn: portfolio.totalReturn,
-                    percentageReturn: portfolio.percentageReturn,
-                    lastUpdated: portfolio.lastUpdated,
-                },
-            });
+
         } catch (error) {
-            res.status(500).json({
-                error: "Error al obtener portafolio",
-                message: error instanceof Error ? error.message : "Error desconocido",
-            });
+            ResponseService.internalError(res, error, "Error al obtener portafolio");
         }
     }
 
     static async getPerformance(req: Request, res: Response) {
         try {
-            const user = req.user;
-            const portfolio = storage.getPortfolioByUserId(user.id);
+            const user: User = req.user;
+            const portfolio = this.PortfolioRepository.findByUserIdOrFail(user.id)
 
-            if (!portfolio) {
-                return res.status(404).json({
-                    error: "Portafolio no encontrado",
-                    message: "No se encontró el portafolio del usuario",
-                });
-            }
+
 
             // Análisis básico de rendimiento
             const performance = {
-                totalValue: portfolio.totalValue,
-                totalInvested: portfolio.totalInvested,
-                totalReturn: portfolio.totalReturn,
-                percentageReturn: portfolio.percentageReturn,
+                ...portfolio,
                 bestPerformer: null as any,
                 worstPerformer: null as any,
                 diversification: {
@@ -54,7 +47,7 @@ export class PortfolioController {
                     sectors: [
                         ...new Set(
                             portfolio.holdings.map((h) => {
-                                const asset = storage.getAssetBySymbol(h.symbol);
+                                const asset = PortfolioController.AssetRepository.findBySymbol(h.symbol);
                                 return asset ? asset.sector : "Unknown";
                             })
                         ),
@@ -71,12 +64,9 @@ export class PortfolioController {
                 performance.worstPerformer = sortedByReturn[sortedByReturn.length - 1];
             }
 
-            res.json({ performance });
+            ResponseService.ok(res, performance, "Rendimiento obtenido exitosamente");
         } catch (error) {
-            res.status(500).json({
-                error: "Error al analizar rendimiento",
-                message: error instanceof Error ? error.message : "Error desconocido",
-            });
+            ResponseService.internalError(res, error, "Error al obtener rendimiento");
         }
     }
 }

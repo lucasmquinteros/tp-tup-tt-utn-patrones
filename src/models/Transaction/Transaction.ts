@@ -1,9 +1,10 @@
+import {typeTransaction} from "../../services/TradingServices/ITradingService";
 
 
 export class Transaction {
   id: string;
   userId: string;
-  type: "buy" | "sell";
+  type: typeTransaction;
   symbol: string;
   quantity: number;
   price: number;
@@ -14,7 +15,7 @@ export class Transaction {
   constructor(
     id: string,
     userId: string,
-    type: "buy" | "sell",
+    type: typeTransaction,
     symbol: string,
     quantity: number,
     price: number,
