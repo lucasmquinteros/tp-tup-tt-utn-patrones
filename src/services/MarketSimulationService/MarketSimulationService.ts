@@ -172,7 +172,7 @@ export class MarketSimulationService implements IMarketSimulationService{
         asset.lastUpdated = new Date();
         storage.updateAsset(asset);
       }
-    });
+    })
 
     // Actualizar portafolios
     this.updateAllPortfolioValues();
