@@ -6,10 +6,15 @@ import { config } from "../../config/config";
 export interface IMarketSimulationService {
     startMarketSimulation(): void;
     stopMarketSimulation(): void;
-    simulateMarketEvent(eventType: "bull" | "bear" | "crash" | "recovery"): void;
+    simulateMarketEvent(eventType: eventType): void;
     getSimulationStatus(): { isRunning: boolean; lastUpdate: Date | null };
 }
-
+export enum eventType {
+    bull = "bull",
+    bear = "bear",
+    crashed = "crashed",
+    recovery = "recovery",
+}
 
 
 export class MarketSimulationService implements IMarketSimulationService{
@@ -48,38 +53,10 @@ export class MarketSimulationService implements IMarketSimulationService{
 
   // Actualizar precios de mercado
   private updateMarketPrices(): void {
-    const allMarketData = storage.getAllMarketData();
 
-    allMarketData.forEach((marketData) => {
-      // Generar cambio aleatorio de precio
-      const randomChange = (Math.random() - 0.5) * 2; // -1 a +1
-      const volatilityFactor = config.market.volatilityFactor;
-      const priceChange = marketData.price * randomChange * volatilityFactor;
-
-      const newPrice = Math.max(marketData.price + priceChange, 0.01); // Evitar precios negativos
-      const change = newPrice - marketData.price;
-      const changePercent = (change / marketData.price) * 100;
-
-      // Actualizar datos de mercado
-      marketData.price = newPrice;
-      marketData.change = change;
-      marketData.changePercent = changePercent;
-      marketData.volume += Math.floor(Math.random() * 10000); // Simular volumen
-      marketData.timestamp = new Date();
-
-      storage.updateMarketData(marketData);
 
       // Actualizar asset correspondiente
-      const asset = storage.getAssetBySymbol(marketData.symbol);
-      if (asset) {
-        asset.currentPrice = newPrice;
-        asset.lastUpdated = new Date();
-        storage.updateAsset(asset);
-      }
-    });
 
-    // Actualizar valores de portafolios
-    this.updateAllPortfolioValues();
   }
 
   // Actualizar todos los portafolios
@@ -130,7 +107,7 @@ export class MarketSimulationService implements IMarketSimulationService{
   }
 
   // Simular evento de mercado específico
-  simulateMarketEvent(eventType: "bull" | "bear" | "crash" | "recovery"): void {
+  simulateMarketEvent(eventType: eventType): void {
     console.log(`Simulando evento de mercado: ${eventType}`);
 
     const allMarketData = storage.getAllMarketData();
@@ -145,7 +122,7 @@ export class MarketSimulationService implements IMarketSimulationService{
         case "bear":
           impactFactor = -(0.05 + Math.random() * 0.1); // -5% a -15%
           break;
-        case "crash":
+        case "crashed":
           impactFactor = -(0.15 + Math.random() * 0.2); // -15% a -35%
           break;
         case "recovery":
@@ -172,7 +149,7 @@ export class MarketSimulationService implements IMarketSimulationService{
         asset.lastUpdated = new Date();
         storage.updateAsset(asset);
       }
-    })
+    });
 
     // Actualizar portafolios
     this.updateAllPortfolioValues();

@@ -6,14 +6,17 @@ import {BaseRepository} from "../BaseRepository";
 import {PortfolioHolding} from "../../models/Portfolio/PortfolioHolding";
 
 export class PortfolioRepository extends BaseRepository<Portfolio> implements IPortfolioRepository{
-    findById(id: string): Portfolio | null {
-            return this.findByUserId(id)
+    updatePortfolio(): void {
+        throw new Error("Method not implemented.");
     }
-    findByUserId(id: string): Portfolio | null {
+    savePortfolio(): void {
+        throw new Error("Method not implemented.");
+    }
+    findById(id: string): Portfolio | null {
         return storage.getPortfolioByUserId(id) ?? null;
     }
     findByUserIdOrFail(id: string): Portfolio {
-        const p = this.findByUserId(id);
+        const p = this.findById(id);
         if (!p) throw new Error("Portafolio no encontrado");
         return p;
     }

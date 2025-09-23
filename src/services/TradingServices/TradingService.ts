@@ -145,10 +145,7 @@ export class TradingService implements  ITradingService{
     marketData.timestamp = new Date();
 
     // Actualizar asset también
-    const asset: Asset = this.assetRepo.findBySymbolOrFail(symbol);
-      asset.currentPrice = newPrice;
-      asset.lastUpdated = new Date();
-      storage.updateAsset(asset);
+    this.assetRepo.updateAsset(symbol, newPrice);
 
     storage.updateMarketData(marketData);
   }
