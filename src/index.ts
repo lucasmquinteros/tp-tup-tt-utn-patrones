@@ -6,7 +6,7 @@ import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger";
 import apiRoutes from "./routes/api";
 import { requestLogger } from "./middleware/auth";
-import { MarketSimulationService } from "./services/MarketSimulationService";
+import { MarketSimulationService } from "./services/MarketSimulationService/MarketSimulationService";
 import { environmentConfig } from "./config/environment";
 
 // Crear aplicación Express

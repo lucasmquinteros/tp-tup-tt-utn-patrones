@@ -1,7 +1,8 @@
 // Servicio de simulación de mercado
-import { MarketData, Asset } from "../models/types";
-import { storage } from "../utils/storage";
-import { config } from "../config/config";
+import {MarketData} from "../../models/MarketData/MarketData";
+import {Asset} from "../../models/Asset/Asset";
+import { storage } from "../../utils/storage";
+import { config } from "../../config/config";
 export interface IMarketSimulationService {
     startMarketSimulation(): void;
     stopMarketSimulation(): void;

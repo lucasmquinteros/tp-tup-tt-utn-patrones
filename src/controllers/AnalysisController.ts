@@ -12,10 +12,7 @@ export class AnalysisController {
             const riskAnalysis = AnalysisController.service.analyzePortfolioRisk(user.id);
             ResponseService.ok(res, { riskAnalysis });
         } catch (error) {
-            ResponseService.internalError(res, {
-                error: "Error en análisis de riesgo",
-                message: error instanceof Error ? error.message : "Error desconocido",
-            });
+            ResponseService.internalError(res, error, "Error al realizar el analisis de riesgo");
         }
     }
 
