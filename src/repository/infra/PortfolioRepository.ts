@@ -15,6 +15,9 @@ export class PortfolioRepository extends BaseRepository<Portfolio> implements IP
     findById(id: string): Portfolio | null {
         return storage.getPortfolioByUserId(id) ?? null;
     }
+    findByUserId(id: string): Portfolio | null {
+        return this.findById(id);
+    }
     findByUserIdOrFail(id: string): Portfolio {
         const p = this.findById(id);
         if (!p) throw new Error("Portafolio no encontrado");

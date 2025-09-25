@@ -1,6 +1,5 @@
 import { RiskAnalysis } from '../../models/RiskAnalysis/RiskAnalisis';
-import { PortfolioRepository } from '../../repository/infra/PortfolioRepository';
-import { AssetRepository } from '../../repository/infra/AssetRepository';
+import { FacadeRepository } from '../../repository/infra/FacadeRepository';
 import { IRiskRecommendationStrategy, DefaultRiskRecommendationStrategy } from './RiskRecomendations';
 import { PortfolioMetricsCalculator } from './PortfolioMetricsCalculator';
 import { TechnicalAnalyzer } from './TechnicalAnalyzer';
@@ -19,8 +18,7 @@ export interface IMarketAnalysisService {
  */
 export class MarketAnalysisService implements IMarketAnalysisService {
     constructor(
-        private readonly portfolioRepository: PortfolioRepository,
-        private readonly assetRepository: AssetRepository,
+        private readonly facade: FacadeRepository,
         private readonly riskRecommendationStrategy: IRiskRecommendationStrategy,
         private readonly metricsCalculator: PortfolioMetricsCalculator,
         private readonly technicalAnalyzer: TechnicalAnalyzer,
@@ -28,16 +26,14 @@ export class MarketAnalysisService implements IMarketAnalysisService {
     ) {}
 
     static createDefault(): IMarketAnalysisService {
-        const portfolioRepository = new PortfolioRepository();
-        const assetRepository = new AssetRepository();
-        const metricsCalculator = new PortfolioMetricsCalculator(assetRepository);
+        const facade = FacadeRepository.getInstance();
+        const metricsCalculator = new PortfolioMetricsCalculator(facade);
         const technicalAnalyzer = new TechnicalAnalyzer();
         const riskStrategy = new DefaultRiskRecommendationStrategy();
         const recommendationEngine = new InvestmentRecommendationEngine(metricsCalculator);
 
         return new MarketAnalysisService(
-            portfolioRepository,
-            assetRepository,
+            facade,
             riskStrategy,
             metricsCalculator,
             technicalAnalyzer,
@@ -51,7 +47,7 @@ export class MarketAnalysisService implements IMarketAnalysisService {
      * @returns Análisis de riesgo completo
      */
     analyzePortfolioRisk(userId: string): RiskAnalysis {
-        const portfolio = this.portfolioRepository.getOneByIdOrFail(userId);
+        const portfolio = this.facade.getPortfolioById(userId);
 
         const diversificationScore = this.metricsCalculator.calculateDiversificationScore(portfolio);
         const volatilityScore = this.metricsCalculator.calculateVolatilityScore(portfolio);

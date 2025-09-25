@@ -1,13 +1,11 @@
 // Rutas de la API
 import { Router } from "express";
-import {
-  AuthController,
-  UserController,
-  MarketController,
-  TradingController,
-  PortfolioController,
-  AnalysisController,
-} from "../controllers";
+import { AuthController } from "../controllers/AuthController";
+import { UserController } from "../controllers/UserController";
+import { MarketController } from "../controllers/MarketController";
+import { TradingController } from "../controllers/TradingController";
+import { PortfolioController } from "../controllers/PortfolioController";
+import { AnalysisController } from "../controllers/AnalysisController";
 import { authenticateApiKey, validateTradeData } from "../middleware/auth";
 
 const router = Router();

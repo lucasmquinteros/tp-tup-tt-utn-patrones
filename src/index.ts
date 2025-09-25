@@ -8,6 +8,7 @@ import apiRoutes from "./routes/api";
 import { requestLogger } from "./middleware/auth";
 import { MarketSimulationService } from "./services/MarketSimulationService/MarketSimulationService";
 import { environmentConfig } from "./config/environment";
+import { FacadeRepository } from "./repository/infra/FacadeRepository";
 
 // Crear aplicación Express
 const app = express();
@@ -100,7 +101,7 @@ app.use(
 );
 
 // Inicializar simulación de mercado
-const marketSimulation = new MarketSimulationService();
+const marketSimulation = new MarketSimulationService(FacadeRepository.getInstance());
 
 // Función para iniciar el servidor
 function startServer() {

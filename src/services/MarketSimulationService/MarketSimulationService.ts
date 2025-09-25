@@ -3,6 +3,7 @@ import {MarketData} from "../../models/MarketData/MarketData";
 import {Asset} from "../../models/Asset/Asset";
 import { storage } from "../../utils/storage";
 import { config } from "../../config/config";
+import {FacadeRepository} from "../../repository/infra/FacadeRepository";
 export interface IMarketSimulationService {
     startMarketSimulation(): void;
     stopMarketSimulation(): void;
@@ -20,6 +21,10 @@ export enum eventType {
 export class MarketSimulationService implements IMarketSimulationService{
   private isRunning: boolean = false;
   private intervalId: NodeJS.Timeout | null = null;
+  private facade: FacadeRepository;
+  constructor(facade: FacadeRepository) {
+    this.facade = facade;
+  }
 
   // Iniciar simulación de mercado
   startMarketSimulation(): void {
@@ -61,56 +66,14 @@ export class MarketSimulationService implements IMarketSimulationService{
 
   // Actualizar todos los portafolios
   private updateAllPortfolioValues(): void {
-    // Obtener todos los usuarios y actualizar sus portafolios
-    const allUsers = [
-      storage.getUserById("demo_user"),
-      storage.getUserById("admin_user"),
-      storage.getUserById("trader_user"),
-    ].filter((user) => user !== undefined);
-
-    allUsers.forEach((user) => {
-      if (user) {
-        const portfolio = storage.getPortfolioByUserId(user.id);
-        if (portfolio && portfolio.holdings.length > 0) {
-          this.recalculatePortfolioValues(portfolio);
-          storage.updatePortfolio(portfolio);
-        }
-      }
-    });
-  }
-
-  // Recalcular valores del portafolio
-  private recalculatePortfolioValues(portfolio: any): void {
-    let totalValue = 0;
-    let totalInvested = 0;
-
-    portfolio.holdings.forEach((holding: any) => {
-      const asset = storage.getAssetBySymbol(holding.symbol);
-      if (asset) {
-        holding.currentValue = holding.quantity * asset.currentPrice;
-        const invested = holding.quantity * holding.averagePrice;
-        holding.totalReturn = holding.currentValue - invested;
-        holding.percentageReturn =
-          invested > 0 ? (holding.totalReturn / invested) * 100 : 0;
-
-        totalValue += holding.currentValue;
-        totalInvested += invested;
-      }
-    });
-
-    portfolio.totalValue = totalValue;
-    portfolio.totalInvested = totalInvested;
-    portfolio.totalReturn = totalValue - totalInvested;
-    portfolio.percentageReturn =
-      totalInvested > 0 ? (portfolio.totalReturn / totalInvested) * 100 : 0;
-    portfolio.lastUpdated = new Date();
+      // TODO: Implementar actualización de valores de todos los portafolios si es necesario
   }
 
   // Simular evento de mercado específico
   simulateMarketEvent(eventType: eventType): void {
     console.log(`Simulando evento de mercado: ${eventType}`);
 
-    const allMarketData = storage.getAllMarketData();
+    const allMarketData = this.facade.getAllMarketData();
 
     allMarketData.forEach((marketData) => {
       let impactFactor = 0;
@@ -135,20 +98,11 @@ export class MarketSimulationService implements IMarketSimulationService{
       const change = newPrice - marketData.price;
       const changePercent = (change / marketData.price) * 100;
 
-      marketData.price = newPrice;
-      marketData.change = change;
-      marketData.changePercent = changePercent;
-      marketData.timestamp = new Date();
+      // Actualizar persistencia a través de la fachada
+      this.facade.updateMarketDataPrice(marketData.symbol, newPrice);
 
-      storage.updateMarketData(marketData);
-
-      // Actualizar asset
-      const asset = storage.getAssetBySymbol(marketData.symbol);
-      if (asset) {
-        asset.currentPrice = newPrice;
-        asset.lastUpdated = new Date();
-        storage.updateAsset(asset);
-      }
+      // Actualizar asset también mediante fachada
+      this.facade.updateAssetPrice(marketData.symbol, newPrice);
     });
 
     // Actualizar portafolios

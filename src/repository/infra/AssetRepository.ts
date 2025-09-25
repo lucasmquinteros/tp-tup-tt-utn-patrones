@@ -18,6 +18,10 @@ export class AssetRepository extends BaseRepository<Asset> implements IAssetRepo
         return storage.getAssetBySymbol(symbol) ?? null;
     }
 
+    findBySymbol(symbol: string): Asset | null {
+        return this.findById(symbol);
+    }
+
     findBySymbolOrFail(symbol: string): Asset {
         const asset = this.findById(symbol);
         if (!asset) throw new Error("Activo no encontrado");

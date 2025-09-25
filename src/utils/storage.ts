@@ -15,9 +15,14 @@ class InMemoryStorage {
   private orders: Order[] = [];
   private portfolios: Map<string, Portfolio> = new Map();
   private marketData: Map<string, MarketData> = new Map();
+private static instance: InMemoryStorage;
 
-  constructor() {
+  private constructor() {
     this.initializeDefaultData();
+  }
+  public static getInstance(){
+      if(InMemoryStorage.instance) return InMemoryStorage.instance;
+      return (InMemoryStorage.instance = new InMemoryStorage())
   }
 
   // Inicializar datos por defecto
@@ -155,4 +160,4 @@ class InMemoryStorage {
 }
 
 // Instancia global de almacenamiento
-export const storage = new InMemoryStorage();
+export const storage = InMemoryStorage.getInstance();

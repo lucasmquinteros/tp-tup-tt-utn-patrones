@@ -2,29 +2,24 @@ import {storage} from "../utils/storage";
 import {User} from "../models/User/User";
 import {ResponseService} from "../services/ResponseService";
 import {Request, Response} from "express";
-import {PortfolioRepository} from "../repository/infra/PortfolioRepository";
-import {AssetRepository} from "../repository/infra/AssetRepository";
+import {FacadeRepository} from "../repository/infra/FacadeRepository";
 
 
 export class PortfolioController {
 
-    private static PortfolioRepository: PortfolioRepository;
-    private static AssetRepository: AssetRepository;
-    constructor(PortfolioRepository: PortfolioRepository, AssetRepository: AssetRepository) {
-        PortfolioController.PortfolioRepository = PortfolioRepository;
-        PortfolioController.AssetRepository = AssetRepository;
-    }
+    private static facade: FacadeRepository = FacadeRepository.getInstance();
 
     static async getPortfolio(req: Request, res: Response) {
         try {
             const user: User = req.user;
-            const portfolio = PortfolioController.PortfolioRepository.findByUserId(user.id)
+            const portfolio = PortfolioController.facade.getPortfolioById(user.id)
 
             if (!portfolio) {
                 ResponseService.notFound(res, "Portafolio no encontrado");
+                return;
             }
 
-
+            ResponseService.ok(res, portfolio, "Portafolio obtenido exitosamente");
         } catch (error) {
             ResponseService.internalError(res, error, "Error al obtener portafolio");
         }
@@ -33,7 +28,7 @@ export class PortfolioController {
     static async getPerformance(req: Request, res: Response) {
         try {
             const user: User = req.user;
-            const portfolio = this.PortfolioRepository.findByUserIdOrFail(user.id)
+            const portfolio = PortfolioController.facade.getPortfolioById(user.id)
 
 
 
@@ -47,8 +42,12 @@ export class PortfolioController {
                     sectors: [
                         ...new Set(
                             portfolio.holdings.map((h) => {
-                                const asset = PortfolioController.AssetRepository.findBySymbol(h.symbol);
-                                return asset ? asset.sector : "Unknown";
+                                try {
+                                    const asset = PortfolioController.facade.getAssetBySymbol(h.symbol);
+                                    return asset.sector;
+                                } catch {
+                                    return "Unknown";
+                                }
                             })
                         ),
                     ],

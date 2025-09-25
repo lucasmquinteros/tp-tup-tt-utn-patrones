@@ -5,19 +5,13 @@ import {Portfolio} from "../../models/Portfolio/Portfolio";
 import {PortfolioHolding} from "../../models/Portfolio/PortfolioHolding";
 import {Transaction} from "../../models/Transaction/Transaction";
 import {ITradingService, typeTransaction} from "./ITradingService";
-import {UserRepository} from "../../repository/infra/UserRepository";
-import {AssetRepository} from "../../repository/infra/AssetRepository";
-import {PortfolioRepository} from "../../repository/infra/PortfolioRepository";
+import {FacadeRepository} from "../../repository/infra/FacadeRepository";
 import {Asset} from "../../models/Asset/Asset";
 
 export class TradingService implements  ITradingService{
-    private userRepo: UserRepository;
-    private assetRepo:AssetRepository;
-    private portfolioRepo: PortfolioRepository;
-    constructor(userRepo: UserRepository, assetRepo: AssetRepository, portfolioRepo: PortfolioRepository) {
-        this.userRepo = userRepo;
-        this.assetRepo =    assetRepo;
-        this.portfolioRepo = portfolioRepo;
+    private facade: FacadeRepository;
+    constructor(facade: FacadeRepository) {
+        this.facade = facade;
     }
     private async executeOrder(
     userId: string,
@@ -26,10 +20,10 @@ export class TradingService implements  ITradingService{
     type: typeTransaction){
         {
 
-            const user = this.userRepo.getOneByIdOrFail(userId);
+            const user = this.facade.getUserById(userId);
 
 
-            const asset = this.assetRepo.findBySymbolOrFail(symbol);
+            const asset = this.facade.getAssetBySymbol(symbol);
 
 
             const executionPrice = asset.currentPrice;
@@ -98,7 +92,7 @@ export class TradingService implements  ITradingService{
   }
   //refactorizacion de actualizar portafolio
     private updatePortfolio(userId: string, symbol: string, quantity: number, price: number, action: typeTransaction){
-        const portfolio: Portfolio = this.portfolioRepo.getOneByIdOrFail(userId);
+        const portfolio: Portfolio = this.facade.getPortfolioById(userId);
         (action === typeTransaction.buy ? portfolio.addHolding(symbol, quantity, price) : portfolio.removeHolding(symbol, quantity))
         this.recalculatePortfolioValues(portfolio);
         storage.updatePortfolio(portfolio);
@@ -109,7 +103,7 @@ export class TradingService implements  ITradingService{
   private recalculatePortfolioValues(portfolio: Portfolio): void {
     // Actualizar el valor actual de cada holding
     portfolio.holdings.forEach((holding) => {
-      const asset: Asset = this.assetRepo.getOneByIdOrFail(holding.symbol);
+      const asset: Asset = this.facade.getAssetBySymbol(holding.symbol);
 
       holding.updateCurrentValue(asset.currentPrice);
     });
@@ -124,8 +118,7 @@ export class TradingService implements  ITradingService{
     quantity: number,
     action: typeTransaction
   ): void {
-    const marketData = storage.getMarketDataBySymbol(symbol);
-    if (!marketData) return;
+    const marketData = this.facade.getMarketDataBySymbol(symbol)
 
     // Calcular impacto basado en volumen
     const impactFactor = quantity / 1000000; // Factor arbitrario
@@ -136,18 +129,11 @@ export class TradingService implements  ITradingService{
         ? marketData.price + priceImpact
         : marketData.price - priceImpact;
 
-    const change = newPrice - marketData.price;
-    const changePercent = (change / marketData.price) * 100;
-
-    marketData.price = newPrice;
-    marketData.change = change;
-    marketData.changePercent = changePercent;
-    marketData.timestamp = new Date();
 
     // Actualizar asset también
-    this.assetRepo.updateAsset(symbol, newPrice);
+    this.facade.updateAssetPrice(symbol, newPrice);
 
-    storage.updateMarketData(marketData);
+   this.facade.updateMarketDataPrice(symbol, newPrice)
   }
 
   // Generar ID único para transacciones

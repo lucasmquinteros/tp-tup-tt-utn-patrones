@@ -10,4 +10,7 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
   findById(id: string): User | null {
     return storage.getUserById(id) ?? null;
   }
+  getAllUsers(): User[]{
+      storage.
+  }
 }

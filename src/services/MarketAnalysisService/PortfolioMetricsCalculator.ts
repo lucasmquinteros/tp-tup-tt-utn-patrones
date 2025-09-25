@@ -1,5 +1,5 @@
 import { Portfolio } from '../../models/Portfolio/Portfolio';
-import { AssetRepository } from '../../repository/infra/AssetRepository';
+import { FacadeRepository } from '../../repository/infra/FacadeRepository';
 
 const VOLATILITY_BY_SECTOR: Record<string, number> = {};
 const DEFAULT_VOLATILITY = 50;
@@ -8,7 +8,7 @@ const MAX_CONCENTRATION = 0.3; // 30%
 const CONCENTRATION_PENALTY_MULTIPLIER = 100;
 
 export class PortfolioMetricsCalculator {
-    constructor(private readonly assetRepository: AssetRepository) {}
+    constructor(private readonly facade: FacadeRepository) {}
 
     /**
      * Calcula el score de diversificación del portafolio
@@ -45,7 +45,7 @@ export class PortfolioMetricsCalculator {
      */
     getAssetVolatility(symbol: string): number {
         try {
-            const asset = this.assetRepository.findBySymbolOrFail(symbol);
+            const asset = this.facade.getAssetBySymbol(symbol);
             return VOLATILITY_BY_SECTOR[asset.sector] || DEFAULT_VOLATILITY;
         } catch {
             return DEFAULT_VOLATILITY;
@@ -56,7 +56,7 @@ export class PortfolioMetricsCalculator {
         const sectors = new Set<string>();
 
         portfolio.holdings.forEach(holding => {
-            const asset = this.assetRepository.getOneByIdOrFail(holding.symbol);
+            const asset = this.facade.getAssetBySymbol(holding.symbol);
             sectors.add(asset.sector);
         });
 
