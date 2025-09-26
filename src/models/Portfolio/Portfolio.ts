@@ -1,3 +1,4 @@
+import { storage } from "../../utils/storage";
 import { PortfolioHolding } from "./PortfolioHolding";
 
 export class Portfolio {
@@ -45,7 +46,7 @@ export class Portfolio {
       this.holdings = this.holdings.filter((h) => h.symbol !== symbol);
     }
 
-    this.lastUpdated = new Date();
+  w  this.lastUpdated = new Date();
     return true;
   }
 
@@ -65,5 +66,30 @@ export class Portfolio {
     this.percentageReturn =
       totalInvested > 0 ? (this.totalReturn / totalInvested) * 100 : 0;
     this.lastUpdated = new Date();
+  }
+  recalculatePortfolioValues(portfolio: any): void {
+    let totalValue = 0;
+    let totalInvested = 0;
+
+    portfolio.holdings.forEach((holding: any) => {
+      const asset = storage.getAssetBySymbol(holding.symbol);
+      if (asset) {
+        holding.currentValue = holding.quantity * asset.currentPrice;
+        const invested = holding.quantity * holding.averagePrice;
+        holding.totalReturn = holding.currentValue - invested;
+        holding.percentageReturn =
+          invested > 0 ? (holding.totalReturn / invested) * 100 : 0;
+
+        totalValue += holding.currentValue;
+        totalInvested += invested;
+      }
+    });
+
+    portfolio.totalValue = totalValue;
+    portfolio.totalInvested = totalInvested;
+    portfolio.totalReturn = totalValue - totalInvested;
+    portfolio.percentageReturn =
+      totalInvested > 0 ? (portfolio.totalReturn / totalInvested) * 100 : 0;
+    portfolio.lastUpdated = new Date();
   }
 }

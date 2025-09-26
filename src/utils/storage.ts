@@ -13,7 +13,6 @@ class InMemoryStorage {
   private assets: Map<string, Asset> = new Map();
   private transactions: Transaction[] = [];
   private orders: Order[] = [];
-  private portfolios: Map<string, Portfolio> = new Map();
   private marketData: Map<string, MarketData> = new Map();
 private static instance: InMemoryStorage;
 
@@ -137,13 +136,9 @@ private static instance: InMemoryStorage;
   }
 
   // Métodos para portafolios
-  getPortfolioByUserId(userId: string): Portfolio | undefined {
-    return this.portfolios.get(userId);
-  }
+  
 
-  updatePortfolio(portfolio: Portfolio): void {
-    this.portfolios.set(portfolio.userId, portfolio);
-  }
+  
 
   // Métodos para datos de mercado
   getAllMarketData(): MarketData[] {
