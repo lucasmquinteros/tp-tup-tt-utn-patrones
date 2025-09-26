@@ -1,24 +1,68 @@
 import { User } from "../../models/User/User";
 import { IUserRepository } from "../repositories/IUserRepository";
-import { storage } from "../../utils/storage";
 import { BaseRepository } from "../BaseRepository";
 
 export class UserRepository
   extends BaseRepository<User>
   implements IUserRepository
 {
+  private users: Map<string, User> = new Map();
+
+  constructor() {
+    super();
+    this.initializeDefaultUsers();
+  }
+
+  private initializeDefaultUsers() {
+    const defaultUsers = [
+      new User(
+        "demo_user",
+        "demo_user",
+        "demo@example.com",
+        "demo-key-123",
+        10000.0,
+        "medium"
+      ),
+      new User(
+        "admin_user",
+        "admin_user",
+        "admin@example.com",
+        "admin-key-456",
+        50000.0,
+        "high"
+      ),
+      new User(
+        "trader_user",
+        "trader_user",
+        "trader@example.com",
+        "trader-key-789",
+        25000.0,
+        "low"
+      ),
+    ];
+    defaultUsers.forEach((user) => this.users.set(user.id, user));
+  }
+
   protected getNotFoundMessage(id: string): string {
     return "Usuario no encontrado";
   }
   findById(id: string): User | null {
-    return storage.getUserById(id) ?? null;
+    return this.users.get(id) || null;
   }
-  getAllUser(): User[] {
-    const allUsers = [
-      storage.getUserById("demo_user"),
-      storage.getUserById("admin_user"),
-      storage.getUserById("trader_user"),
-    ].filter((user) => user !== undefined);
-    return allUsers as User[];
+
+  findByApiKey(apiKey: string): User | null {
+    return (
+      Array.from(this.users.values()).find(
+        (user) => user.apiKey === apiKey
+      ) || null
+    );
+  }
+
+  getAllUsers(): User[] {
+    return Array.from(this.users.values());
+  }
+
+  updateUser(user: User): void {
+    this.users.set(user.id, user);
   }
 }

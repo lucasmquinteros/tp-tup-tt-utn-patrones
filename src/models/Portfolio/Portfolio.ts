@@ -1,4 +1,3 @@
-import { storage } from "../../utils/storage";
 import { PortfolioHolding } from "./PortfolioHolding";
 
 export class Portfolio {
@@ -46,50 +45,30 @@ export class Portfolio {
       this.holdings = this.holdings.filter((h) => h.symbol !== symbol);
     }
 
-  w  this.lastUpdated = new Date();
+    this.lastUpdated = new Date();
     return true;
   }
 
-  calculateTotals(): void {
-    let totalValue = 0;
-    let totalInvested = 0;
-
-    this.holdings.forEach((holding) => {
-      const invested = holding.quantity * holding.averagePrice;
-      totalValue += holding.currentValue;
-      totalInvested += invested;
-    });
-
-    this.totalValue = totalValue;
-    this.totalInvested = totalInvested;
-    this.totalReturn = totalValue - totalInvested;
-    this.percentageReturn =
-      totalInvested > 0 ? (this.totalReturn / totalInvested) * 100 : 0;
-    this.lastUpdated = new Date();
+  updateHoldingValue(symbol: string, currentPrice: number): void {
+    const holding = this.holdings.find((h) => h.symbol === symbol);
+    if (holding) {
+      holding.updateCurrentValue(currentPrice);
+      this.calculateTotals();
+    }
   }
-  recalculatePortfolioValues(portfolio: any): void {
-    let totalValue = 0;
-    let totalInvested = 0;
 
-    portfolio.holdings.forEach((holding: any) => {
-      const asset = storage.getAssetBySymbol(holding.symbol);
-      if (asset) {
-        holding.currentValue = holding.quantity * asset.currentPrice;
-        const invested = holding.quantity * holding.averagePrice;
-        holding.totalReturn = holding.currentValue - invested;
-        holding.percentageReturn =
-          invested > 0 ? (holding.totalReturn / invested) * 100 : 0;
-
-        totalValue += holding.currentValue;
-        totalInvested += invested;
-      }
-    });
-
-    portfolio.totalValue = totalValue;
-    portfolio.totalInvested = totalInvested;
-    portfolio.totalReturn = totalValue - totalInvested;
-    portfolio.percentageReturn =
-      totalInvested > 0 ? (portfolio.totalReturn / totalInvested) * 100 : 0;
-    portfolio.lastUpdated = new Date();
+  calculateTotals(): void {
+    this.totalValue = this.holdings.reduce(
+      (sum, holding) => sum + holding.getCurrentValue(),
+      0
+    );
+    this.totalInvested = this.holdings.reduce(
+      (sum, holding) => sum + holding.getInvestedAmount(),
+      0
+    );
+    this.totalReturn = this.totalValue - this.totalInvested;
+    this.percentageReturn =
+      this.totalInvested > 0 ? (this.totalReturn / this.totalInvested) * 100 : 0;
+    this.lastUpdated = new Date();
   }
 }

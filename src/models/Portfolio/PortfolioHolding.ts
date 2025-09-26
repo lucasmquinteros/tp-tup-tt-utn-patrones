@@ -33,4 +33,19 @@ export class PortfolioHolding {
   removeShares(quantity: number): void {
     this.quantity -= quantity;
   }
+
+  getCurrentValue(): number {
+    return this.currentValue;
+  }
+
+  getCurrentReturn(): { totalReturn: number; percentageReturn: number } {
+    return {
+      totalReturn: this.totalReturn,
+      percentageReturn: this.percentageReturn,
+    };
+  }
+
+  getInvestedAmount(): number {
+    return this.quantity * this.averagePrice;
+  }
 }

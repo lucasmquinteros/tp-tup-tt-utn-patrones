@@ -27,11 +27,28 @@ export class PortfolioRepository extends BaseRepository<Portfolio>{
     updateAllPortfolios(allUsers: User[]): void {
         allUsers.forEach((user) => {
             if (user) {
-                const portfolio = this.findById(user.id)
-                portfolio.
-            }
+                const portfolio = this.findById(user.id);
+                Portfolio.recalculatePortfolioValues(portfolio);
+                this.updatePortfolio(portfolio);
+            
+                }
         });
     }
-    
+    updatePortfolioValues(userId: string, marketData: Map<string, number>): void {
+        const portfolio = this.findById(userId);
+        if (!portfolio) return;
 
+        portfolio.holdings.forEach(holding => {
+            const currentPrice = marketData.get(holding.symbol);
+            if (currentPrice !== undefined) {
+                portfolio.updateHoldingValue(holding.symbol, currentPrice);
+            }
+        });
+
+        this.updatePortfolio(portfolio);
+    }
+
+    getAllPortfolios(): Portfolio[] {
+        return Array.from(this.portfolios.values());
+    }
 }
