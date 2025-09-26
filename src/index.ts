@@ -101,7 +101,9 @@ app.use(
 );
 
 // Inicializar simulación de mercado
-const marketSimulation = new MarketSimulationService(FacadeRepository.getInstance());
+const marketSimulation = new MarketSimulationService(
+  FacadeRepository.getInstance()
+);
 
 // Función para iniciar el servidor
 function startServer() {
