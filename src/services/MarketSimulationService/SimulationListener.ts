@@ -1,9 +1,9 @@
 import { IMarketSimulationService } from "./MarketSimulationService";
 import { IAssetRepository } from "../../repository/repositories/IAssetRepository";
 import { AssetRepository } from "../../repository/infra/AssetRepository";
-import { storage } from "../../utils/storage";
 import { config } from "../../config/config";
 import { FacadeRepository } from "../../repository/infra/FacadeRepository";
+import {Portfolio} from "../../models/Portfolio/Portfolio";
 
 export interface ISimulationListener {
   updatePortfolios(): void;
@@ -33,7 +33,7 @@ export class SimulationListener implements ISimulationListener {
     });
 
     // Actualizar portfolios
-    const portfolios = this.FacadeRepository.getAllPortfolios();
+    const portfolios: Portfolio[] = this.FacadeRepository.getAllPortfolios();
     portfolios.forEach((portfolio) => {
       portfolio.holdings.forEach((holding) => {
         const price = marketPrices.get(holding.symbol);

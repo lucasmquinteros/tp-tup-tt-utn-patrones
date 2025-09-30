@@ -1,5 +1,4 @@
 // Servicios de trading
-import {storage} from "../../utils/storage";
 import {config} from "../../config/config";
 import {Portfolio} from "../../models/Portfolio/Portfolio";
 import {Transaction} from "../../models/Transaction/Transaction";

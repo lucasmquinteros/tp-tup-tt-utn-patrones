@@ -1,7 +1,6 @@
 // Servicio de simulación de mercado
 import {MarketData} from "../../models/MarketData/MarketData";
 import {Asset} from "../../models/Asset/Asset";
-import { storage } from "../../utils/storage";
 import { config } from "../../config/config";
 import {FacadeRepository} from "../../repository/infra/FacadeRepository";
 export interface IMarketSimulationService {

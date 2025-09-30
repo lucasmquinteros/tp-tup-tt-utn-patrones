@@ -1,5 +1,4 @@
 import {Request, Response} from "express";
-import {storage} from "../utils/storage";
 import {ResponseService} from "../services/ResponseService";
 import {MarketDataRepository} from "../repository/infra/MarketDataRepository";
 

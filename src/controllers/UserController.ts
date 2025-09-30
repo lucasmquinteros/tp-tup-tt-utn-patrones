@@ -1,5 +1,4 @@
 import {Request, Response} from "express";
-import {storage} from "../utils/storage";
 import { UpdateProfileSchema } from "../models/User/UserSchema"
 import { UserDTO } from "../models/User/UserDTO";
 import { User } from "../models/User/User";

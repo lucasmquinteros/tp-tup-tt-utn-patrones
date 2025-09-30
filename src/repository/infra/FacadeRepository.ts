@@ -47,6 +47,9 @@ export class FacadeRepository {
   getHolding(portfolio: Portfolio, symbol: string) {
     return this.PortfolioRepository.getHolding(portfolio, symbol);
   }
+  getAllPortfolios(): Portfolio[] {
+    return this.PortfolioRepository.getAllPortfolios();
+  }
 
   // Asset
   getAssetBySymbol(symbol: string): Asset {

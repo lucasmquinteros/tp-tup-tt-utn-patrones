@@ -1,4 +1,3 @@
-import {storage} from "./storage";
 import {User} from "../models/User/User";
 import {Asset} from "../models/Asset/Asset";
 

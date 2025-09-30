@@ -13,4 +13,4 @@ export interface ITradingService {
     ): Promise<Transaction>;
     getTransactionHistory(userId: string): Transaction[];
 }
-export enum typeTransaction {buy, sell}
+export enum typeTransaction {buy, sell, hold}

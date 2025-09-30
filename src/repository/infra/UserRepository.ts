@@ -1,6 +1,7 @@
-import { User } from "../../models/User/User";
-import { IUserRepository } from "../repositories/IUserRepository";
-import { BaseRepository } from "../BaseRepository";
+import {User} from "../../models/User/User";
+import {IUserRepository} from "../repositories/IUserRepository";
+import {BaseRepository} from "../BaseRepository";
+import {riskLevel} from "../../services/MarketAnalysisService/RiskGenerator";
 
 export class UserRepository
   extends BaseRepository<User>
@@ -25,7 +26,7 @@ export class UserRepository
         "demo@example.com",
         "demo-key-123",
         10000.0,
-        "medium"
+        riskLevel.medium
       ),
       new User(
         "admin_user",
@@ -33,7 +34,7 @@ export class UserRepository
         "admin@example.com",
         "admin-key-456",
         50000.0,
-        "high"
+        riskLevel.high
       ),
       new User(
         "trader_user",
@@ -41,7 +42,7 @@ export class UserRepository
         "trader@example.com",
         "trader-key-789",
         25000.0,
-        "low"
+        riskLevel.low
       ),
     ];
     defaultUsers.forEach((user) => this.users.set(user.id, user));
