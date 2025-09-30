@@ -7,13 +7,17 @@ export class UserRepository
   implements IUserRepository
 {
   private users: Map<string, User> = new Map();
+  private static instance: UserRepository;
 
-  constructor() {
+  private constructor() {
     super();
-    this.initializeDefaultUsers();
+  }
+  static getInstance() {
+    if(UserRepository.instance) return UserRepository.instance;
+    return new UserRepository();
   }
 
-  private initializeDefaultUsers() {
+  initializeDefaultData() {
     const defaultUsers = [
       new User(
         "demo_user",

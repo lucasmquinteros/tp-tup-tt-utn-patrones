@@ -14,6 +14,11 @@ export class Validator {
             throw new Error("La cantidad debe ser un número mayor a 0");
         }
     }
+    static validatePrice(price: number) {
+        if(price <= 0){
+            throw new Error("Precio invalido")
+        }
+    }
 
 
 }

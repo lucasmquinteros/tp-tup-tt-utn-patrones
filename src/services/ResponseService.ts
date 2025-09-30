@@ -31,6 +31,11 @@ export class ResponseService {
             message
         });
     }
+    static unauthorized(res: Response, message: string = 'Unauthorized') {
+        return res.status(401).json({
+            success: false,
+        })
+    }
 
     static internalError(res: Response, error: any, message: string = 'Internal Server Error') {
         return res.status(500).json({

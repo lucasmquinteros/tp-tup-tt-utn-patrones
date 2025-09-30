@@ -6,14 +6,17 @@ import { Portfolio } from "../../models/Portfolio/Portfolio";
 import { Asset } from "../../models/Asset/Asset";
 import { User } from "../../models/User/User";
 import { MarketData } from "../../models/MarketData/MarketData";
+import {TransactionRepository} from "./TransactionRepository";
+import {Transaction} from "../../models/Transaction/Transaction";
 
 export class FacadeRepository {
   private static instance: FacadeRepository | null = null;
 
   private PortfolioRepository = new PortfolioRepository();
   private AssetRepository = new AssetRepository();
-  private UserRepository = new UserRepository();
+  private UserRepository = UserRepository.getInstance();
   private MarketDataRepository = new MarketDataRepository();
+  private TransactionRepository = new TransactionRepository();
 
   private constructor() {}
 
@@ -23,10 +26,23 @@ export class FacadeRepository {
     }
     return FacadeRepository.instance;
   }
+  updateUser(user: User): void {
+    this.UserRepository.updateUser(user);
+  }
+  updatePortfolio(portfolio: Portfolio): void {
+      this.PortfolioRepository.updatePortfolio(portfolio);
+  }
+
+  saveTransaction(transaction: Transaction): void {
+      this.TransactionRepository.saveTransaction(transaction);
+  }
+  getTransactionsByUserId(userId: string): Transaction[] {
+    return this.TransactionRepository.getTransactionsByUserId(userId);
+  }
 
   // Portfolio
   getPortfolioById(userId: string): Portfolio {
-    return this.PortfolioRepository.findByUserIdOrFail(userId);
+    return this.PortfolioRepository.findById(userId);
   }
   getHolding(portfolio: Portfolio, symbol: string) {
     return this.PortfolioRepository.getHolding(portfolio, symbol);
@@ -34,7 +50,7 @@ export class FacadeRepository {
 
   // Asset
   getAssetBySymbol(symbol: string): Asset {
-    return this.AssetRepository.findBySymbolOrFail(symbol);
+    return this.AssetRepository.findById(symbol);
   }
   updateAssetPrice(symbol: string, newPrice: number): void {
     this.AssetRepository.updateAsset(symbol, newPrice);
@@ -45,7 +61,7 @@ export class FacadeRepository {
     return this.UserRepository.getOneByIdOrFail(userId);
   }
   getAllUsers(): User[] {
-    return this.UserRepository.getAllUser();
+    return this.UserRepository.getAllUsers();
   }
 
   // Market Data

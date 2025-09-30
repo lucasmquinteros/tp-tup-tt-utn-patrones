@@ -2,6 +2,9 @@ export abstract class BaseRepository<T> {
     getOneById(id: string): T | null {
         return this.findById(id);
     }
+    constructor() {
+        this.initializeDefaultData();
+    }
 
     getOneByIdOrFail(id: string): T {
         const entity = this.getOneById(id);
@@ -10,6 +13,7 @@ export abstract class BaseRepository<T> {
         }
         return entity;
     }
+    abstract initializeDefaultData(): void
 
     protected getNotFoundMessage(id: string): string {
         return "Recurso no encontrado";

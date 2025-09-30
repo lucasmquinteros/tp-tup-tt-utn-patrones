@@ -1,11 +1,12 @@
 import {Request, Response} from "express";
 import {storage} from "../utils/storage";
 import {ResponseService} from "../services/ResponseService";
+import {MarketDataRepository} from "../repository/infra/MarketDataRepository";
 
 export class MarketController {
     static async getPrices(req: Request, res: Response) {
         try {
-            const marketData = storage.getAllMarketData();
+            const marketData = MarketDataRepository.getInstance().getAllMarketData();
 
             ResponseService.ok(res, marketData, "Precios obtenidos exitosamente");
         } catch (error) {
@@ -16,7 +17,7 @@ export class MarketController {
     static async getPriceBySymbol(req: Request, res: Response) {
         try {
             const { symbol } = req.params;
-            const marketData = storage.getMarketDataBySymbol(symbol.toUpperCase());
+            const marketData = MarketDataRepository.getInstance().findById(symbol)
 
             if (!marketData) {
                 ResponseService.notFound(res, "Activo no encontrado");

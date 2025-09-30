@@ -5,9 +5,20 @@ import {storage} from "../../utils/storage";
 import {BaseRepository} from "../BaseRepository";
 import {PortfolioHolding} from "../../models/Portfolio/PortfolioHolding";
 import { User } from "../../models/User/User";
+import { PortfolioService } from "../../services/PortfolioService/PortfolioService";
+import {UserRepository} from "./UserRepository";
 
 export class PortfolioRepository extends BaseRepository<Portfolio>{
     private portfolios: Map<string, Portfolio> = new Map();
+
+    initializeDefaultData() {
+        const defaultUsers = UserRepository.getInstance().getAllUsers();
+        defaultUsers.forEach((user) => {
+            const portfolio = new Portfolio(user.id);
+            this.portfolios.set(user.id, portfolio);
+        });
+    }
+
 
     updatePortfolio(portfolio: Portfolio): void {
     this.portfolios.set(portfolio.userId, portfolio);
@@ -24,14 +35,13 @@ export class PortfolioRepository extends BaseRepository<Portfolio>{
         if(!holding) throw new Error("Holding no encontrado");
         return holding;
     }
-    updateAllPortfolios(allUsers: User[]): void {
+    updateAllPortfolios(allUsers: User[], service: PortfolioService): void {
         allUsers.forEach((user) => {
             if (user) {
                 const portfolio = this.findById(user.id);
-                Portfolio.recalculatePortfolioValues(portfolio);
+                service.recalculatePortfolioValues(portfolio);
                 this.updatePortfolio(portfolio);
-            
-                }
+            }
         });
     }
     updatePortfolioValues(userId: string, marketData: Map<string, number>): void {

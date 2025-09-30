@@ -1,7 +1,9 @@
 // Middleware de autenticación
 import { Request, Response, NextFunction } from "express";
-import { storage } from "../utils/storage";
 import { config } from "../config/config";
+import {ResponseService} from "../services/ResponseService";
+import {UserRepository} from "../repository/infra/UserRepository";
+import {Validator} from "../utils/validator";
 
 // Extender Request para incluir user
 declare global {
@@ -18,36 +20,32 @@ export const authenticateApiKey = (
   res: Response,
   next: NextFunction
 ) => {
-  const apiKey = req.headers["x-api-key"] as string;
+  try{
+      const apiKey = req.headers["x-api-key"] as string;
 
-  if (!apiKey) {
-    return res.status(401).json({
-      error: "API key requerida",
-      message: "Incluye el header x-api-key en tu request",
-    });
+      if (!apiKey) {
+          ResponseService.unauthorized(res, "API key requerida");
+      }
+
+      // Validar API key hardcodeada
+      const username = config.apiKeys[apiKey as keyof typeof config.apiKeys];
+      if (!username) {
+          ResponseService.unauthorized(res)
+      }
+
+      // Buscar usuario en storage
+      const user = UserRepository.getInstance().findByApiKey(apiKey);
+      if (!user) {
+          ResponseService.unauthorized(res, "No se encontro un usuario con esa API key")
+      }
+
+      // Agregar usuario al request
+      req.user = user;
+      next();
+  }catch (error) {
+      ResponseService.internalError(res, error, "Error al autenticar API key");
   }
 
-  // Validar API key hardcodeada
-  const username = config.apiKeys[apiKey as keyof typeof config.apiKeys];
-  if (!username) {
-    return res.status(401).json({
-      error: "API key inválida",
-      message: "La API key proporcionada no es válida",
-    });
-  }
-
-  // Buscar usuario en storage
-  const user = storage.getUserByApiKey(apiKey);
-  if (!user) {
-    return res.status(401).json({
-      error: "Usuario no encontrado",
-      message: "No se encontró un usuario asociado a esta API key",
-    });
-  }
-
-  // Agregar usuario al request
-  req.user = user;
-  next();
 };
 
 // Middleware de logging de requests
@@ -77,44 +75,29 @@ export const validateTradeData = (
   res: Response,
   next: NextFunction
 ) => {
+
+    //implementar tipos de errores
   const { symbol, quantity, price } = req.body;
+  try{
+      // Validaciones básicas
+      Validator.validateSymbol(symbol)
 
-  // Validaciones básicas
-  if (!symbol || typeof symbol !== "string") {
-    return res.status(400).json({
-      error: "Símbolo requerido",
-      message: "El símbolo del activo es requerido y debe ser una cadena",
-    });
+      Validator.validateQuantity(quantity)
+
+      Validator.validatePrice(price)
+
+      // Validar límites de configuración
+      if (quantity > config.limits.maxOrderSize) {
+          ResponseService.badRequest(res, { error: "Cantidad Mayor al limite de ordenes" }, "Cantidad mayor al limite de ordenes")
+      }
+
+      if (quantity < config.limits.minOrderSize) {
+          ResponseService.badRequest(res, { error: "Cantidad Menor al limite de ordenes"}, "Cantidad menor al limite de ordenes")
+      }
+  }catch (error) {
+      ResponseService.badRequest(res, error, "Error al validar datos de trading");
   }
 
-  if (!quantity || typeof quantity !== "number" || quantity <= 0) {
-    return res.status(400).json({
-      error: "Cantidad inválida",
-      message: "La cantidad debe ser un número mayor a 0",
-    });
-  }
-
-  if (price && (typeof price !== "number" || price <= 0)) {
-    return res.status(400).json({
-      error: "Precio inválido",
-      message: "El precio debe ser un número mayor a 0",
-    });
-  }
-
-  // Validar límites de configuración
-  if (quantity > config.limits.maxOrderSize) {
-    return res.status(400).json({
-      error: "Cantidad excede el límite",
-      message: `La cantidad máxima por orden es ${config.limits.maxOrderSize}`,
-    });
-  }
-
-  if (quantity < config.limits.minOrderSize) {
-    return res.status(400).json({
-      error: "Cantidad por debajo del mínimo",
-      message: `La cantidad mínima por orden es ${config.limits.minOrderSize}`,
-    });
-  }
 
   next();
 };

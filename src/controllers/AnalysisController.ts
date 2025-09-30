@@ -1,10 +1,10 @@
-import { IMarketAnalysisService, createDefaultMarketAnalysisService } from "../services/MarketAnalysisService/MarketAnalysisService";
+import { MarketAnalysisService } from "../services/MarketAnalysisService/MarketAnalysisService";
 import { ResponseService } from "../services/ResponseService";
 import { Request, Response } from "express";
 
 // Controlador de análisis
 export class AnalysisController {
-        private static service: IMarketAnalysisService = createDefaultMarketAnalysisService();
+        private static service: MarketAnalysisService = new MarketAnalysisService();
 
     static async getRiskAnalysis(req: Request, res: Response) {
         try {

@@ -2,16 +2,17 @@
 import {storage} from "../../utils/storage";
 import {config} from "../../config/config";
 import {Portfolio} from "../../models/Portfolio/Portfolio";
-import {PortfolioHolding} from "../../models/Portfolio/PortfolioHolding";
 import {Transaction} from "../../models/Transaction/Transaction";
 import {ITradingService, typeTransaction} from "./ITradingService";
 import {FacadeRepository} from "../../repository/infra/FacadeRepository";
-import {Asset} from "../../models/Asset/Asset";
+import { PortfolioService } from "../PortfolioService/PortfolioService";
 
 export class TradingService implements  ITradingService{
     private facade: FacadeRepository;
+    private portfolioService: PortfolioService;
     constructor(facade: FacadeRepository) {
         this.facade = facade;
+        this.portfolioService = new PortfolioService(facade);
     }
     private async executeOrder(
     userId: string,
@@ -49,13 +50,14 @@ export class TradingService implements  ITradingService{
 
 
             user.addBalance(netAmount);
-            storage.updateUser(user);
+            this.facade.updateUser(user);
+
 
 
             this.updatePortfolio(userId, symbol, quantity, executionPrice, type);
 
 
-            storage.addTransaction(transaction);
+            this.facade.saveTransaction(transaction);
 
             this.simulateMarketImpact(symbol, quantity, type);
 
@@ -93,24 +95,9 @@ export class TradingService implements  ITradingService{
   //refactorizacion de actualizar portafolio
     private updatePortfolio(userId: string, symbol: string, quantity: number, price: number, action: typeTransaction){
         const portfolio: Portfolio = this.facade.getPortfolioById(userId);
-        (action === typeTransaction.buy ? portfolio.addHolding(symbol, quantity, price) : portfolio.removeHolding(symbol, quantity))
-        this.recalculatePortfolioValues(portfolio);
-        storage.updatePortfolio(portfolio);
-
+        this.portfolioService.applyTradeAndRecalculate(portfolio, symbol, quantity, price, action);
+        this.facade.updatePortfolio(portfolio);
     }
-
-  // Recalcular valores del portafolio
-  private recalculatePortfolioValues(portfolio: Portfolio): void {
-    // Actualizar el valor actual de cada holding
-    portfolio.holdings.forEach((holding) => {
-      const asset: Asset = this.facade.getAssetBySymbol(holding.symbol);
-
-      holding.updateCurrentValue(asset.currentPrice);
-    });
-
-    // Calcular totales del portafolio
-    portfolio.calculateTotals();
-  }
 
   // Simulación de impacto en el mercado después de una operación
   private simulateMarketImpact(
@@ -143,6 +130,6 @@ export class TradingService implements  ITradingService{
 
   // Obtener historial de transacciones
   getTransactionHistory(userId: string): Transaction[] {
-    return storage.getTransactionsByUserId(userId);
+    return this.facade.getTransactionsByUserId(userId);
   }
 }

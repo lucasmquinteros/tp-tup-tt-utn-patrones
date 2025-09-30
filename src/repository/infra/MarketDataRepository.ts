@@ -1,20 +1,22 @@
 import {BaseRepository} from "../BaseRepository";
 import {MarketData} from "../../models/MarketData/MarketData";
-import {storage} from "../../utils/storage";
+import {config} from "../../config/config";
 
 export class MarketDataRepository extends BaseRepository<MarketData> {
     private marketData: Map<string, MarketData> = new Map();
-
+    static instance: MarketDataRepository;
     constructor() {
         super();
-        this.initializeDefaultMarketData();
+    }
+    static getInstance() {
+        if(MarketDataRepository.instance) return MarketDataRepository.instance;
+        return new MarketDataRepository();
     }
 
-    private initializeDefaultMarketData() {
+    initializeDefaultData() {
         config.market.baseAssets.forEach(baseAsset => {
-            const marketData = new MarketData(baseAsset.symbol, baseAsset.basePrice);
-            this.marketData.set(baseAsset.symbol, marketData);
-        });
+            this.marketData.set(baseAsset.symbol, new MarketData(baseAsset.symbol, baseAsset.basePrice))
+        })
     }
 
     findById(symbol: string): MarketData {
