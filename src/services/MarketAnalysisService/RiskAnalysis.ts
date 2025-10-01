@@ -11,10 +11,10 @@ export const volatilityBySector: { [key: string]: number } = {
     "E-commerce": 60,
 };
 
-export class RiskAnalysis {
+export class RiskAnalysisGenerator {
     private facadeRepository: FacadeRepository = FacadeRepository.getInstance();
     // Calcular score de diversificación - Algoritmo simplificado
-    private calculateDiversificationScore(portfolio: Portfolio): number {
+    calculateDiversificationScore(portfolio: Portfolio): number {
         if (portfolio.holdings.length === 0) return 0;
 
         // Contar sectores únicos
@@ -47,7 +47,7 @@ export class RiskAnalysis {
     }
 
     // Calcular score de volatilidad - Algoritmo básico
-    private calculateVolatilityScore(portfolio: Portfolio): number {
+    calculateVolatilityScore(portfolio: Portfolio): number {
         if (portfolio.holdings.length === 0) return 0;
 
         let weightedVolatility = 0;

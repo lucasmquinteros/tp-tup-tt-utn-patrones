@@ -1,32 +1,33 @@
 import {RiskAnalysis} from "../../models/RiskAnalysis/RiskAnalisis";
-import {Portfolio} from "../../models/Portfolio/Portfolio";
-import {PortfolioHolding} from "../../models/Portfolio/PortfolioHolding";
+import {RiskAnalysisGenerator} from "./RiskAnalysis";
+import {FacadeRepository} from "../../repository/infra/FacadeRepository";
+import {RiskGenerator, riskLevel} from "./RiskGenerator";
+
 export class MarketAnalysisService {
+    private recommendationGenerator: RiskGenerator = new RiskGenerator()
+    private riskAnalysisGenerator: RiskAnalysisGenerator = new RiskAnalysisGenerator();
     // Análisis de riesgo del portafolio
     analyzePortfolioRisk(userId: string): RiskAnalysis {
-        const portfolio = storage.getPortfolioByUserId(userId);
-        if (!portfolio) {
-            throw new Error("Portafolio no encontrado");
-        }
+        const portfolio = FacadeRepository.getInstance().getPortfolioById(userId);
 
         // Cálculo básico de diversificación
-        const diversificationScore = this.calculateDiversificationScore(portfolio);
+        const diversificationScore = this.riskAnalysisGenerator.calculateDiversificationScore(portfolio);
 
         // Cálculo básico de volatilidad
-        const volatilityScore = this.calculateVolatilityScore(portfolio);
+        const volatilityScore = this.riskAnalysisGenerator.calculateVolatilityScore(portfolio);
 
         // Determinar nivel de riesgo general
-        let portfolioRisk: "low" | "medium" | "high";
+        let portfolioRisk: riskLevel;
         if (volatilityScore < 30 && diversificationScore > 70) {
-            portfolioRisk = "low";
+            portfolioRisk = riskLevel.low;
         } else if (volatilityScore < 60 && diversificationScore > 40) {
-            portfolioRisk = "medium";
+            portfolioRisk = riskLevel.medium;
         } else {
-            portfolioRisk = "high";
+            portfolioRisk = riskLevel.high;
         }
 
         // Generar recomendaciones básicas
-        const recommendations = this.generateRiskRecommendations(
+        const recommendations: string[] = this.recommendationGenerator.generateRiskRecommendations(
             diversificationScore,
             volatilityScore,
             portfolioRisk
@@ -41,12 +42,4 @@ export class MarketAnalysisService {
 
         return riskAnalysis;
     }
-
-    // Generar recomendaciones
-
-
-    // Análisis técnico básico
-
-
-
 }

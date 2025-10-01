@@ -5,9 +5,14 @@ import {config} from "../../config/config";
 //Hace falta heredar baseRepository?
 export class AssetRepository extends BaseRepository<Asset> implements IAssetRepository {
     private assets: Map<string, Asset> = new Map();
+    private static instance: AssetRepository;
 
-    constructor() {
+    private constructor() {
         super();
+    }
+    static getInstance() {
+        if(AssetRepository.instance) return AssetRepository.instance;
+        return new AssetRepository();
     }
     saveAsset(asset: Asset) {
         this.assets.set(asset.symbol, asset);
