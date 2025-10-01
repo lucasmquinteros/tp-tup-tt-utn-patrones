@@ -3,6 +3,8 @@ import {typeTransaction} from "../TradingServices/ITradingService";
 
 export class TechnicalAnalizer {
     facadeRepository: FacadeRepository = FacadeRepository.getInstance();
+
+    //no se usa nunca???
     performTechnicalAnalysis(symbol: string): any {
         const marketData = this.facadeRepository.getMarketDataBySymbol(symbol);
 
