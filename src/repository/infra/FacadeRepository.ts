@@ -6,17 +6,17 @@ import { Portfolio } from "../../models/Portfolio/Portfolio";
 import { Asset } from "../../models/Asset/Asset";
 import { User } from "../../models/User/User";
 import { MarketData } from "../../models/MarketData/MarketData";
-import {TransactionRepository} from "./TransactionRepository";
-import {Transaction} from "../../models/Transaction/Transaction";
+import { TransactionRepository } from "./TransactionRepository";
+import { Transaction } from "../../models/Transaction/Transaction";
 
 export class FacadeRepository {
   private static instance: FacadeRepository | null = null;
 
-  private PortfolioRepository = new PortfolioRepository();
-  private AssetRepository = new AssetRepository();
+  private PortfolioRepository = PortfolioRepository.getInstance();
+  private AssetRepository = AssetRepository.getInstance();
   private UserRepository = UserRepository.getInstance();
-  private MarketDataRepository = new MarketDataRepository();
-  private TransactionRepository = new TransactionRepository();
+  private MarketDataRepository = MarketDataRepository.getInstance();
+  private TransactionRepository = TransactionRepository.getInstance();
 
   private constructor() {}
 
@@ -30,11 +30,11 @@ export class FacadeRepository {
     this.UserRepository.updateUser(user);
   }
   updatePortfolio(portfolio: Portfolio): void {
-      this.PortfolioRepository.updatePortfolio(portfolio);
+    this.PortfolioRepository.updatePortfolio(portfolio);
   }
 
   saveTransaction(transaction: Transaction): void {
-      this.TransactionRepository.saveTransaction(transaction);
+    this.TransactionRepository.saveTransaction(transaction);
   }
   getTransactionsByUserId(userId: string): Transaction[] {
     return this.TransactionRepository.getTransactionsByUserId(userId);

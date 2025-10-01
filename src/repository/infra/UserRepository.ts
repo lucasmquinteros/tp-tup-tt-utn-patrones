@@ -1,20 +1,19 @@
-import {User} from "../../models/User/User";
-import {IUserRepository} from "../repositories/IUserRepository";
-import {BaseRepository} from "../BaseRepository";
-import {riskLevel} from "../../services/MarketAnalysisService/RiskGenerator";
+import { User } from "../../models/User/User";
+import { IUserRepository } from "../repositories/IUserRepository";
+import { BaseRepository } from "../BaseRepository";
+import { riskLevel } from "../../services/MarketAnalysisService/RiskGenerator";
 
 export class UserRepository
   extends BaseRepository<User>
   implements IUserRepository
 {
-  private users: Map<string, User> = new Map();
   private static instance: UserRepository;
 
   private constructor() {
     super();
   }
   static getInstance() {
-    if(UserRepository.instance) return UserRepository.instance;
+    if (UserRepository.instance) return UserRepository.instance;
     return new UserRepository();
   }
 
@@ -45,29 +44,29 @@ export class UserRepository
         riskLevel.low
       ),
     ];
-    defaultUsers.forEach((user) => this.users.set(user.id, user));
+    defaultUsers.forEach((user) => this.entities.set(user.id, user));
   }
 
   protected getNotFoundMessage(id: string): string {
     return "Usuario no encontrado";
   }
   findById(id: string): User | null {
-    return this.users.get(id) || null;
+    return this.entities.get(id) || null;
   }
 
   findByApiKey(apiKey: string): User | null {
     return (
-      Array.from(this.users.values()).find(
+      Array.from(this.entities.values()).find(
         (user) => user.apiKey === apiKey
       ) || null
     );
   }
 
   getAllUsers(): User[] {
-    return Array.from(this.users.values());
+    return Array.from(this.entities.values());
   }
 
   updateUser(user: User): void {
-    this.users.set(user.id, user);
+    this.entities.set(user.id, user);
   }
 }
