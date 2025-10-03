@@ -1,5 +1,4 @@
 //implementar iportfolio
-import { IPortfolioRepository } from "../repositories/IPortfolioRepository";
 import { Portfolio } from "../../models/Portfolio/Portfolio";
 import { BaseRepository } from "../BaseRepository";
 import { PortfolioHolding } from "../../models/Portfolio/PortfolioHolding";

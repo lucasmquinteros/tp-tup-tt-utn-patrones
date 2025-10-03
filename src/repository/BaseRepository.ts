@@ -1,19 +1,8 @@
 export abstract class BaseRepository<T> {
   protected entities: Map<string, T> = new Map();
 
-  getOneById(id: string): T | null {
-    return this.findById(id);
-  }
   constructor() {
     this.initializeDefaultData();
-  }
-
-  getOneByIdOrFail(id: string): T {
-    const entity = this.getOneById(id);
-    if (!entity) {
-      throw new Error(this.getNotFoundMessage(id));
-    }
-    return entity;
   }
   abstract initializeDefaultData(): void;
 
@@ -21,7 +10,14 @@ export abstract class BaseRepository<T> {
     return "Recurso no encontrado";
   }
 
-  abstract findById(id: string): T | null;
+  findById(id: string): T {
+      const entity = this.entities.get(id);
+      if (!entity) throw new Error(this.getNotFoundMessage(id));
+      return entity;
+  }
+  save(entity: T): void {
+    this.entities.set(entity.id, entity);
+  }
 }
 
 /*

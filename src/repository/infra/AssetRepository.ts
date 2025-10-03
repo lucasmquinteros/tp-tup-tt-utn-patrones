@@ -1,11 +1,9 @@
-import { IAssetRepository } from "../repositories/IAssetRepository";
 import { Asset } from "../../models/Asset/Asset";
 import { BaseRepository } from "../BaseRepository";
 import { config } from "../../config/config";
 //Hace falta heredar baseRepository?
 export class AssetRepository
   extends BaseRepository<Asset>
-  implements IAssetRepository
 {
   private static instance: AssetRepository;
 
@@ -30,12 +28,6 @@ export class AssetRepository
       );
       this.entities.set(baseAsset.symbol, asset);
     });
-  }
-
-  findById(symbol: string): Asset {
-    const asset: Asset | any = this.entities.get(symbol);
-    if (!asset) throw new Error("Asset no encontrado");
-    return asset;
   }
 
   updateAsset(symbol: string, newPrice: number): void {

@@ -1,11 +1,9 @@
 import { User } from "../../models/User/User";
-import { IUserRepository } from "../repositories/IUserRepository";
 import { BaseRepository } from "../BaseRepository";
 import { riskLevel } from "../../services/MarketAnalysisService/RiskGenerator";
 
 export class UserRepository
   extends BaseRepository<User>
-  implements IUserRepository
 {
   private static instance: UserRepository;
 
@@ -49,9 +47,6 @@ export class UserRepository
 
   protected getNotFoundMessage(id: string): string {
     return "Usuario no encontrado";
-  }
-  findById(id: string): User | null {
-    return this.entities.get(id) || null;
   }
 
   findByApiKey(apiKey: string): User | null {

@@ -1,64 +1,57 @@
-import { IMarketSimulationService } from "./MarketSimulationService";
-import { IAssetRepository } from "../../repository/repositories/IAssetRepository";
-import { AssetRepository } from "../../repository/infra/AssetRepository";
-import { config } from "../../config/config";
 import { FacadeRepository } from "../../repository/infra/FacadeRepository";
-import {Portfolio} from "../../models/Portfolio/Portfolio";
-
-export interface IListenerPortfolio {
-    updatePortfolios(marketPrices: Map<string, number>): void;
-}
-export interface IListenerAsset {
-    updateAssets(marketPrices: Map<string, number>): void;
-}
+import {MarketData} from "../../models/MarketData/MarketData";
+import {config} from "../../config/config";
 
 export interface ISimulationListener {
   update(): void;
 }
-abstract class AdapterListeners
-    implements ISimulationListener, IListenerPortfolio, IListenerAsset {
-    private simulationListenerPortfolios: IListenerPortfolio = new SimulationListenerPortfolios();
-    private simulationListenerAssets: IListenerAsset = new SimulationListenerAssets();
-
+export class ObserverMarketData implements ISimulationListener {
+    private portfolioListener: ObserverPortfolios = new ObserverPortfolios();
+    private assetListener: ObserverAssets = new ObserverAssets();
     update(): void {
-        const allMarketData = FacadeRepository.getInstance().getAllMarketData();
-        const marketPrices = new Map<string, number>();
+        const marketData: MarketData[] = FacadeRepository.getInstance().getAllMarketData();
+        marketData.forEach((marketData: MarketData) => {
+            const randomChange = (Math.random() - 0.5) * 2; // -1 a +1
+            const volatilityFactor = config.market.volatilityFactor;
+            const priceChange = marketData.price * randomChange * volatilityFactor;
 
-        allMarketData.forEach((data) => {
-            const newPrice = Math.max(data.price + (Math.random() - 0.5) * 2 * config.market.volatilityFactor * data.price, 0.01);
-            marketPrices.set(data.symbol, newPrice);
-            FacadeRepository.getInstance().updateMarketDataPrice(data.symbol, newPrice);
-        });
+            const newPrice = Math.max(marketData.price + priceChange, 0.01); // Evitar precios negativos
+            const change = newPrice - marketData.price;
+            const changePercent = (change / marketData.price) * 100;
 
-        this.updatePortfolios(marketPrices);
-        this.updateAssets(marketPrices);
-    }
+            // Actualizar datos de mercado
+            marketData.price = newPrice;
+            marketData.change = change;
+            marketData.changePercent = changePercent;
+            marketData.volume += Math.floor(Math.random() * 10000); // Simular volumen
+            marketData.timestamp = new Date();
+            FacadeRepository.getInstance().updateMarketDataPrice(marketData.symbol, newPrice);
+        })
+        this.assetListener.update();
+        this.portfolioListener.update();
 
-    updatePortfolios(marketPrices: Map<string, number>): void {
-        this.simulationListenerPortfolios.updatePortfolios(marketPrices);
-    }
-    updateAssets(marketPrices: Map<string, number>): void {
-        this.simulationListenerAssets.updateAssets(marketPrices);
     }
 }
 
-export class SimulationListenerPortfolios implements IListenerPortfolio{
-    updatePortfolios(marketPrices: Map<string, number>): void {
+
+export class ObserverPortfolios implements ISimulationListener{
+    update(): void {
+        const marketData: MarketData[] = FacadeRepository.getInstance().getAllMarketData();
         const portfolios = FacadeRepository.getInstance().getAllPortfolios();
         portfolios.forEach(portfolio => {
             portfolio.holdings.forEach(holding => {
-                const price = marketPrices.get(holding.symbol);
-                if (price) {
-                    portfolio.updateHoldingValue(holding.symbol, price);
-                }
+                const price = marketData.find(data => data.symbol === holding.symbol)?.price;
+                if (!price) return;
+                portfolio.updateHoldingValue(holding.symbol, price);
             });
         });
     }
 }
 
-export class SimulationListenerAssets implements IListenerAsset {
-    updateAssets(marketPrices: Map<string, number>): void {
-        marketPrices.forEach((price, symbol) => {
+export class ObserverAssets implements ISimulationListener {
+    update(): void {
+        const marketData: MarketData[] = FacadeRepository.getInstance().getAllMarketData();
+        marketData.forEach(({symbol, price}: MarketData) => {
             FacadeRepository.getInstance().updateAssetPrice(symbol, price);
         });
     }

@@ -3,6 +3,7 @@ import {MarketData} from "../../models/MarketData/MarketData";
 import {Asset} from "../../models/Asset/Asset";
 import { config } from "../../config/config";
 import {FacadeRepository} from "../../repository/infra/FacadeRepository";
+import {ISimulationListener, ObserverMarketData, ObserverPortfolios} from "./SimulationListener";
 export interface IMarketSimulationService {
     startMarketSimulation(): void;
     stopMarketSimulation(): void;
@@ -24,6 +25,9 @@ export class MarketSimulationService implements IMarketSimulationService{
     constructor(facade: FacadeRepository) {
         this.facade = facade;
     }
+    private notifyListeners(listener: ISimulationListener) {
+        listener.update();
+    }
 
     // Iniciar simulación de mercado
     startMarketSimulation(): void {
@@ -36,7 +40,7 @@ export class MarketSimulationService implements IMarketSimulationService{
         console.log("Iniciando simulación de mercado...");
 
         this.intervalId = setInterval(() => {
-            this.updateMarketPrices();
+            this.notifyListeners(new ObserverMarketData());
         }, config.market.updateIntervalMs);
     }
 
@@ -55,18 +59,6 @@ export class MarketSimulationService implements IMarketSimulationService{
         console.log("Simulación de mercado detenida");
     }
 
-    // Actualizar precios de mercado
-    private updateMarketPrices(): void {
-
-
-        // Actualizar asset correspondiente
-
-    }
-
-    // Actualizar todos los portafolios
-    private updateAllPortfolioValues(): void {
-        // TODO: Implementar actualización de valores de todos los portafolios si es necesario
-    }
 
     // Simular evento de mercado específico
     simulateMarketEvent(eventType: eventType): void {
@@ -76,10 +68,9 @@ export class MarketSimulationService implements IMarketSimulationService{
 
         allMarketData.forEach((marketData) => {
             let impactFactor = 0;
-            //posible refactorizacion de codigo para que sea mas dinamico y no se repita
             switch (eventType) {
                 case "bull":
-                    impactFactor = 0.05 + Math.random() * 0.1; // +5% a +15%
+                    impactFactor = 0.05 + Math.random() * 0.1;
                     break;
                 case "bear":
                     impactFactor = -(0.05 + Math.random() * 0.1); // -5% a -15%
@@ -94,18 +85,10 @@ export class MarketSimulationService implements IMarketSimulationService{
 
             const priceChange = marketData.price * impactFactor;
             const newPrice = Math.max(marketData.price + priceChange, 0.01);
-            const change = newPrice - marketData.price;
-            const changePercent = (change / marketData.price) * 100;
 
-            // Actualizar persistencia a través de la fachada
-           this.facade.updateMarketDataPrice(marketData.symbol, newPrice);
-
-            // Actualizar asset también mediante fachada
             this.facade.updateAssetPrice(marketData.symbol, newPrice);
         });
-
-        // Actualizar portafolios
-        this.updateAllPortfolioValues();
+        this.notifyListeners(new ObserverMarketData())
     }
 
     // Obtener estado de simulación

@@ -61,7 +61,7 @@ export class FacadeRepository {
 
   // User
   getUserById(userId: string): User {
-    return this.UserRepository.getOneByIdOrFail(userId);
+    return this.UserRepository.findById(userId);
   }
   getAllUsers(): User[] {
     return this.UserRepository.getAllUsers();
@@ -69,7 +69,7 @@ export class FacadeRepository {
 
   // Market Data
   getMarketDataBySymbol(symbol: string): MarketData {
-    return this.MarketDataRepository.getOneByIdOrFail(symbol);
+    return this.MarketDataRepository.findById(symbol);
   }
   getAllMarketData(): MarketData[] {
     return this.MarketDataRepository.getAllMarketData();
