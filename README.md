@@ -1,284 +1,90 @@
-# API de Broker Financiero - Metodología de Sistemas II
+TP de metodología de sistemas 2\.
 
-## Descripción
+# **¿Qué cambió y por qué? (puntos clave)**
 
-Esta API simula un broker financiero que permite realizar operaciones de trading, gestión de portafolios y análisis de mercado.
+* **Abstracción del acceso a datos**: implementé repositorios (`PortfolioRepository`, `AssetRepository`, `UserRepository`, `MarketDataRepository`, `TransactionRepository`) y una **fachada** `FacadeRepository` que centraliza llamadas. Este cambio es importante ya que cada una de estas podría representar lógica de acceso a una base de datos.
 
-## Características principales
+* **Listeners**: Utilizamos el patron observer para quitar logica en el servicio, y delegar la responsabilidad de actualizar información,  la interfaz ISimulationListener se encarga de encapsular los actualizadores, luego habrá más detalles sobre la implementación
 
-- Gestión de usuarios y autenticación básica
-- Operaciones de trading (compra/venta de activos)
-- Gestión de portafolios
-- Consulta de precios de mercado
-- Historial de transacciones
-- Análisis básico de riesgo
+* **Interfaces y clases abstractas**: se añadieron interfaces (`IMarketSimulationService`, `ISimulationListener`, `IListenerPortfolio`, `IListenerAsset`) y clases base para normalizar contratos.
 
-## Endpoints disponibles
+* **ResponseService**: esta clase con sus métodos se encarga de enviar una respuesta con información correspondiente en formato JSON, en caso de error lanzar el error con su código. Aunque en algunos lugares hay mal manero de errores por la falta de tipificación. Estaría bueno implementar clases como error 404, error 401 y en los catch llamar a response Service dependiendo el tipo del error.  
+  ![][image1]
 
-### Autenticación
+**Patrones de diseño aplicados**
 
-- `GET /api/auth/validate` - Validar API key
+### **Repository:**
 
-### Usuarios
+Se utilizó repository ya que la clase InMemoryStorage era una superclase que centralizaba toda la lógica de almacenamiento de datos, creando un Diccionario para almacenar cada tipo de dato, lo cual es demasiado complejo para un futuro migrar o simular una base de datos real con encapsulamiento.
 
-- `GET /api/users/profile` - Obtener perfil del usuario
-- `PUT /api/users/profile` - Actualizar perfil del usuario
+* **Dónde:** `*Repository.ts` (Portfolio, Asset, User, MarketData, Transaction).
 
-### Mercado
+* **Cómo:** cada repo encapsula `findById`, `getAll`, `update`, `save`, etc. Servicios consumen repos a través de la fachada o con inyección.
 
-- `GET /api/market/prices` - Obtener precios actuales
-- `GET /api/market/prices/:symbol` - Obtener precio de un activo específico
+* **Qué mejora:** desacopla lógica de negocio de persistencia; facilita tests y cambios de backend.
 
-### Trading
+### **![][image2]**
 
-- `POST /api/trading/buy` - Comprar activos
-- `POST /api/trading/sell` - Vender activos
-- `GET /api/trading/history` - Historial de transacciones
+### **Facade (Fachada):**
 
-### Portafolio
+Opte por fachada ya que tenia problema con muchas inyecciones de dependencias para metodos unicos que necesitaba en los servicios, como getUserById, getAssetById, getPortfolioById, para poder usar estos 3 métodos necesitaba inyectar 3 repositorios, a lo que mi fachada resolvió el problema.
 
-- `GET /api/portfolio` - Ver portafolio actual
-- `GET /api/portfolio/performance` - Análisis de rendimiento
+* **Dónde:** `FacadeRepository.ts`.
 
-### Análisis
+* **Cómo:** expone métodos combinados (`getPortfolioById`, `getAssetBySymbol`, `updatePortfolio`, `saveTransaction`, etc.) que internamente llaman a repos.
 
-- `GET /api/analysis/risk` - Análisis de riesgo del portafolio
-- `GET /api/analysis/recommendations` - Recomendaciones de inversión
+* **Qué mejora:** simplifica llamadas desde clientes que necesitaban varios repos; reduce cantidad de parámetros en servicios o controladores.
 
-## Instalación y ejecución
+* **Nota:** al principio soluciono el problema de inyectar muchos repositorios en servicios, luego se hizo una clase muy grande que acopla muchos métodos, por lo que quizás era mejor implementar un mediador en lugar de una fachada.
 
-### Prerrequisitos
+![][image3]
 
-- Node.js versión 18 o superior
-- npm (incluido con Node.js)
-- Un cliente HTTP como curl, Postman, o Insomnia
+### **Observer (Observador):**
 
-### Instalación
+Aquí reconocí útil un observer ya que MarketSimulationService tenía metodos como UpdatePortfolios, UpdateMarketData, UpdateAssets que rompen por completo el principio de responsabilidad única por lo que era mejor hacer una clase que esté esperando los cambios y los listeners que se encarguen de actualizar su entidad, sin involucrarse en lugares donde no corresponden
 
-1. **Clonar o descargar el proyecto**
+* **Dónde:** `MarketSimulationService` (publicador) y listeners (suscriptores).
 
-   ```bash
-   git clone <repository-url>
-   cd tp-tup-tt-utn-patrones
-   ```
+* **Cómo:** el simulador produce ticks; los listeners reaccionan y actualizan portafolios/activos.
 
-2. **Instalar dependencias**
+* **Qué mejora:** desacopla productor/consumidor; facilita extensión (métricas, notificaciones, logs).
 
-   ```bash
-   npm install
-   ```
+![][image4]
 
-3. **Compilar el proyecto (opcional)**
-   ```bash
-   npm run build
-   ```
+### **Singleton:**
 
-### Ejecución
+Aunque quizás un abuse un poco de este patrón lo considere fundamental en cada repositorio ya que cada uno de estos podría ser una conexión a una base de datos, servidor, etc. Simplemente no quiero instancias de bases de datos por cualquier lado en mi sistema, que sea una única instancia y acceder para utilizar los métodos.
 
-**Modo desarrollo con recarga automática (recomendado):**
+* **Dónde:** `*Repository.ts`(uso actual).
 
-```bash
-# Opción 1: Usando nodemon (recarga automática)
-npm run watch
+* **Cómo:** instancia única accesible globalmente.
 
-# Opción 2: Usando script personalizado
-npm run dev:full
-# o directamente
-./dev.sh
+* **Qué mejora:** conveniencia en proyectos chicos; permite usar un único estado.  
+  ![][image5]
 
-# Opción 3: Modo desarrollo simple (sin recarga)
-npm run dev
-```
+### **Strategy:**
 
-**Modo producción:**
+Antes la clase MarketAnalysisService se encargaba de analizar cada usuario con su portfolio, calcular su total y dar la recomendación según distintos factores. Ahora delegamos las tareas para dar un analisis a distintas clases como calculadoras(technical Analyst), Generador de recomendaciones y Analizador de riesgo y su clase market Analysis Service que actúa como una fachada entre estas 3 clases.
 
-```bash
-npm run build
-npm start
-```
+* **Dónde:** `RiskGenerator.ts`(Clase Contexto)
 
-**Otros comandos útiles:**
+* **Cómo:**Cada clase `*Risk Strategy` se encarga de implementar la estrategia para generar la recomendación de forma correcta y Risk Generator se encarga de cambiar de forma dinámica cada estrategia
 
-- `npm run watch:build` - Compila TypeScript en modo watch
-- `npm run start:watch` - Ejecuta el build compilado con recarga automática
+* **Qué mejora:** El contexto Risk Generator permite cambiar dinámicamente entre estrategias
 
-La API estará disponible en `http://localhost:3000`
+* **Nota:** En base repository encontramos un mini Strategy implícito en donde el Map\<string, T\> de entidades cambia de forma dinámica en cada repositorio y como lo utilice evitando asi un diccionario por cada repositorio.
 
-### Verificación de funcionamiento
+![][image6]
 
-Una vez levantado el servidor, deberías ver:
+**Template method:**
 
-```
-🚀 Servidor ejecutándose en http://localhost:3000
-📚 Documentación disponible en http://localhost:3000/api-docs
-💡 API Keys para testing:
-   - demo-key-123 (demo_user)
-   - admin-key-456 (admin_user)
-   - trader-key-789 (trader_user)
-📈 Simulación de mercado iniciada
-```
+Este patrón se encarga de diseñar varios métodos o algoritmos en una clase padre (en este caso BaseRepository)  donde declaramos la lógica sobre findById, save y probablemente en un futuro se puedan implementar más métodos.
 
-## Documentación Swagger
+* **Donde:** `BaseRepository` (Clase Abstracta)
+* **Cómo:**
 
-Una vez levantada la aplicación, la documentación interactiva estará disponible en:
-`http://localhost:3000/api-docs`
+`findById(id: string): T { const entity = this.entities.get(id); if (!entity) throw new Error(this.getNotFoundMessage(id)); return entity;}`
 
-## Autenticación
+`save(entity: T): void { this.entities.set(entity.id, entity) }`
 
-La API utiliza un sistema simple de API keys. Incluye el header `x-api-key` en tus requests:
-
-```
-x-api-key: demo-key-123
-```
-
-**API Keys válidas para testing:**
-
-- `demo-key-123` (usuario: demo_user)
-- `admin-key-456` (usuario: admin_user)
-- `trader-key-789` (usuario: trader_user)
-
-## Ejemplos de uso
-
-### Obtener precios de mercado
-
-```bash
-curl -X GET "http://localhost:3000/api/market/prices" \
-  -H "x-api-key: demo-key-123"
-```
-
-### Comprar activos
-
-```bash
-curl -X POST "http://localhost:3000/api/trading/buy" \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: demo-key-123" \
-  -d '{
-    "symbol": "AAPL",
-    "quantity": 10,
-    "price": 150.50
-  }'
-```
-
-### Ver portafolio
-
-```bash
-curl -X GET "http://localhost:3000/api/portfolio" \
-  -H "x-api-key: demo-key-123"
-```
-
-## Opciones de prueba
-
-### 1. Documentación interactiva (Swagger)
-
-Abre tu navegador en: http://localhost:3000/api-docs
-
-### 2. Script de pruebas automatizado
-
-```bash
-./test-api.sh
-```
-
-### 3. Colección de Postman
-
-Importa el archivo: `postman/Financial-Broker-API.postman_collection.json`
-
-Para más detalles, consulta la [documentación de Postman](./postman/README.md) donde encontrarás una colección completa con todos los endpoints.
-
-### 4. Comandos curl adicionales
-
-**Validar API key:**
-
-```bash
-curl -X GET "http://localhost:3000/api/auth/validate" \
-  -H "x-api-key: demo-key-123"
-```
-
-**Comprar con orden límite:**
-
-```bash
-curl -X POST "http://localhost:3000/api/trading/buy" \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: demo-key-123" \
-  -d '{
-    "symbol": "AAPL",
-    "quantity": 10,
-    "orderType": "limit",
-    "limitPrice": 145.00
-  }'
-```
-
-## Estructura del proyecto
-
-```
-tp-tup-tt-utn-patrones/
-├── src/
-│   ├── config/           # Configuración
-│   ├── controllers/      # Controladores HTTP
-│   ├── middleware/       # Middlewares
-│   ├── models/          # Tipos y modelos
-│   ├── routes/          # Definición de rutas
-│   ├── services/        # Lógica de negocio
-│   ├── utils/           # Utilidades
-│   └── index.ts         # Punto de entrada
-├── postman/             # Colección de Postman
-├── dist/                # Código compilado
-├── README.md            # Documentación principal
-└── test-api.sh          # Script de pruebas
-```
-
-## Solución de problemas
-
-### Error: "Cannot find module"
-
-```bash
-rm -rf node_modules package-lock.json
-npm install
-```
-
-### Error: Puerto ocupado
-
-Cambia el puerto usando una variable de entorno:
-
-```bash
-PORT=3001 npm run dev
-```
-
-### Error: API key inválida
-
-Asegúrate de usar una de las API keys válidas:
-
-- `demo-key-123`
-- `admin-key-456`
-- `trader-key-789`
-
-### El servidor no responde
-
-Verifica que el servidor esté ejecutándose y escuchando en el puerto correcto.
-
-## Objetivos pedagógicos
-
-Este proyecto está diseñado para que los estudiantes:
-
-1. **Identifiquen problemas de diseño** en el código existente
-2. **Trabajen en equipo** desarrollando nuevas funcionalidades
-3. **Mantengan la funcionalidad** existente mientras desarrollan
-4. **Documenten su trabajo** y decisiones de implementación
-
-## Próximos pasos
-
-1. Explorar el código fuente y analizar su estructura actual
-2. Identificar áreas para desarrollar nuevas funcionalidades
-3. Implementar mejoras que agreguen valor al sistema
-4. Verificar que la funcionalidad se mantiene intacta después de los cambios
-
-## Notas importantes
-
-⚠️ **Solo para uso educativo**: Esta API simula operaciones financieras y no debe usarse en producción.
-⚠️ **Sin base de datos**: Todos los datos se almacenan en memoria y se pierden al reiniciar.
-⚠️ **Autenticación simplificada**: El sistema de autenticación es básico y no debe usarse en producción.
-
----
-
-**¡Buena suerte con la refactorización!** 🚀
-
-_Proyecto educativo - UTN - Metodología de Sistemas II_
+* **Qué mejora**: Unifica la lógica sobre encontrar un objeto por su id o guardar un nuevo objeto.
